@@ -28,7 +28,8 @@ liftThrows :: ThrowsError a -> EvalM a
 liftThrows (Left err) = EvalM $ lift $ throwError err
 liftThrows (Right val) = EvalM $ lift $ return val
 
-data LispVal = Atom String
+data LispVal = Unspecified
+             | Atom String
              | List [LispVal]
              | DottedList [LispVal] LispVal
              | Number Integer
@@ -50,6 +51,7 @@ instance Eq LispVal where
   _ == _ = False
 
 showVal :: LispVal -> String
+showVal Unspecified = "<unspecified>"
 showVal (String contents) = "\"" ++ contents ++ "\""
 showVal (Atom name) = name
 showVal (Number contents) = show contents
