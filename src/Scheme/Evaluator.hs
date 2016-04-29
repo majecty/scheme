@@ -11,6 +11,7 @@ import Control.Monad.Reader
 import Data.IORef
 import System.IO
 
+import Scheme.Desugarer
 import Scheme.Parser
 import Scheme.Types
 
@@ -48,7 +49,7 @@ eval (List (Atom "lambda" : DottedList params varargs : body)) =
 eval (List (Atom "lambda" : varargs@(Atom _) : body)) =
     makeVarargs varargs [] body
 eval (List [Atom "load", String filename]) =
-    (liftEnv $ load filename) >>= fmap last . mapM eval
+    (liftEnv $ load filename) >>= fmap last . mapM (eval . desugar)
 eval (List (function : args)) = do
     func <- eval function
     argVals <- mapM eval args
@@ -197,7 +198,7 @@ evalAndPrint env expr = do
 
 evalString :: Env -> String -> IO (Either LispError LispVal)
 evalString env expr =
-    let evalResult = (liftEnv $ liftThrows $ readExpr expr) >>= eval :: EvalM LispVal
+    let evalResult = (liftEnv $ liftThrows $ readExpr expr) >>= eval . desugar :: EvalM LispVal
     in
         runEvalM env evalResult
 
