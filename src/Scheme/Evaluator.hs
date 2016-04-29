@@ -184,11 +184,6 @@ equal [arg1, arg2] = do
     return $ Bool $ (primitiveEquals || let (Bool x) = eqvEquals in x)
 equal badArgList = throwError $ NumArgs 2 badArgList
 
-trapError action = catchError action (return . show)
-
-extractValue :: ThrowsError a -> a
-extractValue (Right val) = val
-
 flushStr :: String -> IO ()
 flushStr str = putStr str >> hFlush stdout
 
@@ -196,13 +191,15 @@ readPrompt :: String -> IO String
 readPrompt prompt = flushStr prompt >> getLine
 
 evalAndPrint :: Env -> String -> IO ()
-evalAndPrint env expr =  evalString env expr >>= putStrLn
+evalAndPrint env expr = do
+  evalResult <- evalString env expr
+  putStrLn $ either show show evalResult
 
-evalString :: Env -> String -> IO String
+evalString :: Env -> String -> IO (Either LispError LispVal)
 evalString env expr =
     let evalResult = (liftEnv $ liftThrows $ readExpr expr) >>= eval :: EvalM LispVal
     in
-        runEvalM env $ fmap show evalResult
+        runEvalM env evalResult
 
 until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
 until_ pred prompt action = do
@@ -215,8 +212,8 @@ until_ pred prompt action = do
 runOne :: [String] -> IO ()
 runOne args = do
     env <- primitiveBindings >>= flip bindVars [("args", List $ map String $ drop 1 args)]
-    (runEvalM env $ fmap show $ eval (List [Atom "load", String (args !! 0)]))
-         >>= hPutStrLn stderr
+    (runEvalM env $ eval (List [Atom "load", String (args !! 0)]))
+         >>= hPutStrLn stderr . (either show show)
 
 -- FIXME: Add auto-completion and history
 -- https://hackage.haskell.org/package/haskeline
@@ -236,12 +233,9 @@ liftThrows :: ThrowsError a -> IOThrowsError a
 liftThrows (Left err) = throwError err
 liftThrows (Right val) = return val
 
-runEvalM :: Env -> EvalM String -> IO String
-runEvalM env action = runIOThrows ioThrows
+runEvalM :: Env -> EvalM LispVal -> IO (Either LispError LispVal)
+runEvalM env action = runExceptT ioThrows
     where ioThrows = (runReaderT . run) action $ env
-
-runIOThrows :: IOThrowsError String -> IO String
-runIOThrows action = runExceptT (trapError action) >>= return . extractValue
 
 isBound :: Env -> String -> IO Bool
 isBound envRef var = readIORef envRef >>= return . maybe False (const True) . lookup var
