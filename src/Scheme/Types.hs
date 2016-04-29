@@ -37,6 +37,15 @@ data LispVal = Atom String
              | Func {params :: [String], vararg :: (Maybe String),
                       body :: [LispVal], closure :: Env}
 
+instance Eq LispVal where
+  (Bool arg1) == (Bool arg2) = arg1 == arg2
+  (Number arg1) == (Number arg2) = arg1 == arg2
+  (String arg1) == (String arg2) = arg1 == arg2
+  (Atom arg1) == (Atom arg2) = arg1 == arg2
+  (DottedList xs x) == (DottedList ys y) = xs == ys && x == y
+  (List arg1) == (List arg2) = arg1 == arg2
+  _ == _ = False
+
 showVal :: LispVal -> String
 showVal (String contents) = "\"" ++ contents ++ "\""
 showVal (Atom name) = name
@@ -62,6 +71,7 @@ data LispError = NumArgs Integer [LispVal]
                | BadSpecialForm String LispVal
                | NotFunction String String
                | UnboundVar String String
+               deriving (Eq)
 
 showError :: LispError -> String
 showError (UnboundVar message varname) = message ++ ": " ++ varname

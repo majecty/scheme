@@ -1,5 +1,8 @@
 module Scheme
-  ( runRepl
+  ( evalString
+  , LispVal(..)
+  , primitiveBindings
+  , runRepl
   , runOne
   ) where
 
