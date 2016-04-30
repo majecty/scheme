@@ -122,8 +122,13 @@ boolBinop unpacker op args = if length args /= 2
                                      right <- unpacker $ args !! 1
                                      return $ Bool $ left `op` right
 
+numBoolBinop :: (Integer -> Integer -> Bool) -> [LispVal] -> ThrowsError LispVal
 numBoolBinop = boolBinop unpackNum
+
+strBoolBinop :: (String -> String -> Bool) -> [LispVal] -> ThrowsError LispVal
 strBoolBinop = boolBinop unpackStr
+
+boolBoolBinop :: (Bool -> Bool -> Bool) -> [LispVal] -> ThrowsError LispVal
 boolBoolBinop = boolBinop unpackBool
 
 unpackNum :: LispVal -> ThrowsError Integer
