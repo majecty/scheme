@@ -2,7 +2,7 @@
 
 module Scheme.Evaluator
   ( evalString
-  , primitiveBindings
+  , newEnv
   , runRepl
   , runOne
   ) where
@@ -205,23 +205,26 @@ until_ pred prompt action = do
 -- FIXME: Load stdlib.scm before evaluating the program
 runOne :: [String] -> IO ()
 runOne args = do
-    env <- primitiveBindings >>= flip bindVars [("args", List $ map String $ drop 1 args)]
+    env <- newEnv >>= flip bindVars [("args", List $ map String $ drop 1 args)]
     (runEvalM env $ eval (List [Atom "load", String (args !! 0)]))
          >>= hPutStrLn stderr . (either show show)
 
 -- FIXME: Add auto-completion and history
 -- https://hackage.haskell.org/package/haskeline
 runRepl :: IO ()
-runRepl = primitiveBindings >>= until_ (== "quit") (readPrompt "Lisp>>> ") . evalAndPrint
+runRepl = newEnv >>= until_ (== "quit") (readPrompt "Lisp>>> ") . evalAndPrint
 
 nullEnv :: IO Env
 nullEnv = newIORef []
 
-primitiveBindings :: IO Env
-primitiveBindings = nullEnv >>= (flip bindVars $ map (makeFunc IOFunc) ioPrimitives
-                                              ++ map (makeFunc PrimitiveFunc) primitives)
-    where makeFunc constructor (var, func) = (var, constructor func)
+newEnv :: IO Env
+newEnv = primitiveBindings
+  where
+    makeFunc constructor (var, func) = (var, constructor func)
 
+    primitiveBindings :: IO Env
+    primitiveBindings = nullEnv >>= (flip bindVars $ map (makeFunc IOFunc) ioPrimitives
+                                              ++ map (makeFunc PrimitiveFunc) primitives)
 
 liftThrows :: ThrowsError a -> IOThrowsError a
 liftThrows (Left err) = throwError err

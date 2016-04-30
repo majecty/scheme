@@ -1,7 +1,7 @@
 module Scheme
   ( evalString
   , LispVal(..)
-  , primitiveBindings
+  , newEnv
   , runRepl
   , runOne
   ) where
