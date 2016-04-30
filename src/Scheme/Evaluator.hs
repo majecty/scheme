@@ -314,10 +314,15 @@ bindVars envRef bindings = readIORef envRef >>= extendEnv bindings >>= newIORef
           addBinding (var, value) = do ref <- newIORef value
                                        return (var, ref)
 
+makeFunc :: Maybe String -> [LispVal] -> [LispVal] -> EvalM LispVal
 makeFunc varargs params body = do
   env <- ask
   return $ Func (map showVal params) varargs body env
+
+makeNormalFunc :: [LispVal] -> [LispVal] -> EvalM LispVal
 makeNormalFunc = makeFunc Nothing
+
+makeVarargs :: LispVal -> [LispVal] -> [LispVal] -> EvalM LispVal
 makeVarargs = makeFunc . Just . showVal
 
 -- FIXME: Add more IO primitives
