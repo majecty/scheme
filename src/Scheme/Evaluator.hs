@@ -17,11 +17,9 @@ import Scheme.Desugarer
 import Scheme.Parser
 import Scheme.Types
 
-liftEnv :: IOThrowsError a -> EvalM a
-liftEnv x = EvalM $ lift x
-
-applyEnv :: Env -> EvalM a -> IOThrowsError a
-applyEnv env x = runReaderT (run x) env
+liftThrows :: ThrowsError a -> EvalM a
+liftThrows (Left err) = EvalM $ lift $ throwError err
+liftThrows (Right val) = EvalM $ lift $ return val
 
 -- FIXME: Add let
 eval :: LispVal -> EvalM LispVal
@@ -52,14 +50,14 @@ eval (List (Atom "lambda" : DottedList params varargs : body)) =
 eval (List (Atom "lambda" : varargs@(Atom _) : body)) =
     makeVarargs varargs [] body
 eval (List [Atom "load", String filename]) =
-    (liftEnv $ load filename) >>= fmap last . mapM (eval . desugar)
+    (load filename) >>= fmap last . mapM (eval . desugar)
 eval (List (function : args)) = do
     func <- eval function
     argVals <- mapM eval args
-    liftEnv $ apply func argVals
+    apply func argVals
 eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
 
-apply :: LispVal -> [LispVal] -> IOThrowsError LispVal
+apply :: LispVal -> [LispVal] -> EvalM LispVal
 apply (PrimitiveFunc func) args = liftThrows $ func args
 apply (Func params varargs body closure) args =
     if num params /= num args && varargs == Nothing
@@ -67,7 +65,7 @@ apply (Func params varargs body closure) args =
        else do
            env <- (liftIO $ bindVars closure $ zip params args)
            env' <- bindVarArgs varargs env
-           applyEnv env' evalBody
+           local (const env') evalBody
     where remainingArgs = drop (length params) args
           num = toInteger . length
           evalBody = fmap last $ mapM eval body
@@ -237,7 +235,7 @@ evalAndPrint env expr = do
 
 evalString :: Env -> String -> IO (Either LispError LispVal)
 evalString env expr =
-    let evalResult = (liftEnv $ liftThrows $ readExpr expr) >>= eval . desugar :: EvalM LispVal
+    let evalResult = (liftThrows $ readExpr expr) >>= eval . desugar :: EvalM LispVal
     in
         runEvalM env evalResult
 
@@ -271,10 +269,6 @@ newEnv = primitiveBindings
     primitiveBindings :: IO Env
     primitiveBindings = nullEnv >>= (flip bindVars $ map (makeFunc IOFunc) ioPrimitives
                                               ++ map (makeFunc PrimitiveFunc) primitives)
-
-liftThrows :: ThrowsError a -> IOThrowsError a
-liftThrows (Left err) = throwError err
-liftThrows (Right val) = return val
 
 runEvalM :: Env -> EvalM LispVal -> IO (Either LispError LispVal)
 runEvalM env action = runExceptT ioThrows
@@ -325,7 +319,7 @@ makeNormalFunc = makeFunc Nothing
 makeVarargs = makeFunc . Just . showVal
 
 -- FIXME: Add more IO primitives
-ioPrimitives :: [(String, [LispVal] -> IOThrowsError LispVal)]
+ioPrimitives :: [(String, [LispVal] -> EvalM LispVal)]
 ioPrimitives = [("apply", applyProc),
                 ("open-input-file", makePort ReadMode),
                 ("open-output-file", makePort WriteMode),
@@ -337,30 +331,30 @@ ioPrimitives = [("apply", applyProc),
                 ("read-all", readAll)]
 -- FIXME: Add display function which prints the value to the stdout
 
-applyProc :: [LispVal] -> IOThrowsError LispVal
+applyProc :: [LispVal] -> EvalM LispVal
 applyProc [func, List args] = apply func args
 applyProc (func : args) = apply func args
 
-makePort :: IOMode -> [LispVal] -> IOThrowsError LispVal
+makePort :: IOMode -> [LispVal] -> EvalM LispVal
 makePort mode [String filename] = fmap Port $ liftIO $ openFile filename mode
 
-closePort :: [LispVal] -> IOThrowsError LispVal
+closePort :: [LispVal] -> EvalM LispVal
 closePort [Port port] = liftIO $ hClose port >> (return $ Bool True)
 closePort _ = return $ Bool False
 
-readProc :: [LispVal] -> IOThrowsError LispVal
+readProc :: [LispVal] -> EvalM LispVal
 readProc [] = readProc [Port stdin]
 readProc [Port port] = (liftIO $ hGetLine stdin) >>= liftThrows . readExpr
 
-writeProc :: [LispVal] -> IOThrowsError LispVal
+writeProc :: [LispVal] -> EvalM LispVal
 writeProc [obj] = writeProc [obj, Port stdout]
 writeProc [obj, Port port] = liftIO $ hPrint port obj >> (return $ Bool True)
 
-readContents :: [LispVal] -> IOThrowsError LispVal
+readContents :: [LispVal] -> EvalM LispVal
 readContents [String filename] = fmap String $ liftIO $ readFile filename
 
-load :: String -> IOThrowsError [LispVal]
+load :: String -> EvalM [LispVal]
 load filename = (liftIO $ readFile filename) >>= liftThrows . readExprList
 
-readAll :: [LispVal] -> IOThrowsError LispVal
+readAll :: [LispVal] -> EvalM LispVal
 readAll [String filename] = fmap List $ load filename
