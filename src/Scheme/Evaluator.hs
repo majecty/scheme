@@ -57,7 +57,7 @@ eval (List (function : args)) = do
     func <- eval function
     argVals <- mapM eval args
     liftEnv $ apply func argVals
-eval badForm = liftEnv $ throwError $ BadSpecialForm "Unrecognized special form" badForm
+eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
 
 apply :: LispVal -> [LispVal] -> IOThrowsError LispVal
 apply (PrimitiveFunc func) args = liftThrows $ func args
