@@ -1,10 +1,13 @@
 {-# LANGUAGE ExistentialQuantification #-}
 module Scheme.Primitives
-  ( primitives
+  ( ioPrimitives
+  , primitives
   ) where
 
 import Control.Monad.Except
+import System.IO
 
+import Scheme.Parser
 import Scheme.Types
 
 data Unpacker = forall a. Eq a => AnyUnpacker (LispVal -> ThrowsError a)
@@ -162,3 +165,31 @@ primitives = [("+", numericBinop (+)),
               ("port?", isPort),
               ("procedure?", isProcedure)]
 
+-- FIXME: Add more IO primitives
+ioPrimitives :: [(String, [LispVal] -> EvalM LispVal)]
+ioPrimitives = [("open-input-file", makePort ReadMode),
+                ("open-output-file", makePort WriteMode),
+                ("close-input-port", closePort),
+                ("close-output-port", closePort),
+                ("read", readProc),
+                ("write", writeProc),
+                ("read-contents", readContents)]
+-- FIXME: Add display function which prints the value to the stdout
+
+makePort :: IOMode -> [LispVal] -> EvalM LispVal
+makePort mode [String filename] = fmap Port $ liftIO $ openFile filename mode
+
+closePort :: [LispVal] -> EvalM LispVal
+closePort [Port port] = liftIO $ hClose port >> (return $ Bool True)
+closePort _ = return $ Bool False
+
+readProc :: [LispVal] -> EvalM LispVal
+readProc [] = readProc [Port stdin]
+readProc [Port port] = (liftIO $ hGetLine stdin) >>= liftThrows . readExpr
+
+writeProc :: [LispVal] -> EvalM LispVal
+writeProc [obj] = writeProc [obj, Port stdout]
+writeProc [obj, Port port] = liftIO $ hPrint port obj >> (return $ Bool True)
+
+readContents :: [LispVal] -> EvalM LispVal
+readContents [String filename] = fmap String $ liftIO $ readFile filename

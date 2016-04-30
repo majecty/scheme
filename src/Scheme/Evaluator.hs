@@ -20,10 +20,6 @@ import Scheme.Parser
 import Scheme.Primitives
 import Scheme.Types
 
-liftThrows :: ThrowsError a -> EvalM a
-liftThrows (Left err) = EvalM $ lift $ throwError err
-liftThrows (Right val) = EvalM $ lift $ return val
-
 -- FIXME: Add let
 eval :: LispVal -> EvalM LispVal
 eval val@(String _) = return val
@@ -76,6 +72,9 @@ apply (Func params varargs body closure) args =
               Just argName -> liftIO $ bindVars env [(argName, List $ remainingArgs)]
               Nothing -> return env
 
+load :: String -> EvalM [LispVal]
+load filename = (liftIO $ readFile filename) >>= liftThrows . readExprList
+
 evalString :: Env -> String -> IO (Either LispError LispVal)
 evalString env expr =
     let evalResult = (liftThrows $ readExpr expr) >>= eval . desugar :: EvalM LispVal
@@ -118,7 +117,8 @@ newEnv = primitiveBindings
     makeFunc constructor (var, func) = (var, constructor func)
 
     primitiveBindings :: IO Env
-    primitiveBindings = nullEnv >>= (flip bindVars $ map (makeFunc IOFunc) ioPrimitives
+    primitiveBindings = nullEnv >>= (flip bindVars $ map (makeFunc IOFunc) builtinPrimitives
+                                              ++ map (makeFunc IOFunc) ioPrimitives
                                               ++ map (makeFunc PrimitiveFunc) primitives)
 
 runEvalM :: Env -> EvalM LispVal -> IO (Either LispError LispVal)
@@ -136,43 +136,12 @@ makeNormalFunc = makeFunc Nothing
 makeVarargs :: LispVal -> [LispVal] -> [LispVal] -> EvalM LispVal
 makeVarargs = makeFunc . Just . showVal
 
--- FIXME: Add more IO primitives
-ioPrimitives :: [(String, [LispVal] -> EvalM LispVal)]
-ioPrimitives = [("apply", applyProc),
-                ("open-input-file", makePort ReadMode),
-                ("open-output-file", makePort WriteMode),
-                ("close-input-port", closePort),
-                ("close-output-port", closePort),
-                ("read", readProc),
-                ("write", writeProc),
-                ("read-contents", readContents),
-                ("read-all", readAll)]
--- FIXME: Add display function which prints the value to the stdout
-
 applyProc :: [LispVal] -> EvalM LispVal
 applyProc [func, List args] = apply func args
 applyProc (func : args) = apply func args
 
-makePort :: IOMode -> [LispVal] -> EvalM LispVal
-makePort mode [String filename] = fmap Port $ liftIO $ openFile filename mode
-
-closePort :: [LispVal] -> EvalM LispVal
-closePort [Port port] = liftIO $ hClose port >> (return $ Bool True)
-closePort _ = return $ Bool False
-
-readProc :: [LispVal] -> EvalM LispVal
-readProc [] = readProc [Port stdin]
-readProc [Port port] = (liftIO $ hGetLine stdin) >>= liftThrows . readExpr
-
-writeProc :: [LispVal] -> EvalM LispVal
-writeProc [obj] = writeProc [obj, Port stdout]
-writeProc [obj, Port port] = liftIO $ hPrint port obj >> (return $ Bool True)
-
-readContents :: [LispVal] -> EvalM LispVal
-readContents [String filename] = fmap String $ liftIO $ readFile filename
-
-load :: String -> EvalM [LispVal]
-load filename = (liftIO $ readFile filename) >>= liftThrows . readExprList
-
 readAll :: [LispVal] -> EvalM LispVal
 readAll [String filename] = fmap List $ load filename
+
+builtinPrimitives :: [(String, [LispVal] -> EvalM LispVal)]
+builtinPrimitives = [("apply", applyProc), ("read-all", readAll)]

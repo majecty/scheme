@@ -2,6 +2,7 @@
 
 module Scheme.Types
   ( Env
+  , liftThrows
   , LispError(..)
   , LispVal(..)
   , showVal
@@ -22,6 +23,10 @@ type Env = IORef [(String, IORef LispVal)]
 newtype EvalM a = EvalM {
         run :: (ReaderT Env (ExceptT LispError IO) a)
     } deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadError LispError)
+
+liftThrows :: ThrowsError a -> EvalM a
+liftThrows (Left err) = EvalM $ lift $ throwError err
+liftThrows (Right val) = EvalM $ lift $ return val
 
 data LispVal = Atom String
              | List [LispVal]
