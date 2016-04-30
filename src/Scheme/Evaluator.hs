@@ -224,11 +224,6 @@ equal [arg1, arg2] = do
     return $ Bool $ (primitiveEquals || let (Bool x) = eqvEquals in x)
 equal badArgList = throwError $ NumArgs 2 badArgList
 
-evalAndPrint :: Env -> String -> IO ()
-evalAndPrint env expr = do
-  evalResult <- evalString env expr
-  putStrLn $ either show show evalResult
-
 evalString :: Env -> String -> IO (Either LispError LispVal)
 evalString env expr =
     let evalResult = (liftThrows $ readExpr expr) >>= eval . desugar :: EvalM LispVal
@@ -258,7 +253,11 @@ replLoop = do
     let quitCondition Nothing = True
         quitCondition (Just "quit") = True
         quitCondition _ = False
-    until_ quitCondition (getInputLine "Lisp>>> ") (liftIO . evalAndPrint env . fromJust)
+    until_ quitCondition (getInputLine "Lisp>>> ") (evalAndPrint env . fromJust)
+  where
+    evalAndPrint env expr = do
+      evalResult <- liftIO $ evalString env expr
+      outputStrLn $ either show show evalResult
 
 nullEnv :: IO Env
 nullEnv = newIORef []
