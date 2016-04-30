@@ -106,7 +106,7 @@ replLoop = do
     quitPred Nothing = True
     quitPred (Just "quit") = True
     quitPred _ = False
-
+    evalAndPrint env "" = return ()
     evalAndPrint env expr = do
       evalResult <- liftIO $ evalString env expr
       outputStrLn $ either show show evalResult
