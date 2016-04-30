@@ -10,7 +10,6 @@ module Scheme.Evaluator
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.IORef
 import Data.Maybe
 import System.Console.Haskeline
 import System.IO
