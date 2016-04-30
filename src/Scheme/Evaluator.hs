@@ -29,6 +29,7 @@ eval val@(String _) = return val
 eval val@(Number _) = return val
 eval val@(Bool _) = return val
 eval (Atom id) = getVar id
+eval (List (Atom "begin" : exps)) = fmap last $ mapM eval exps
 eval (List [Atom "quote", val]) = return val
 -- FIXME: Make alt optional
 eval (List [Atom "if", pred, conseq, alt]) = do

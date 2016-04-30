@@ -26,5 +26,10 @@ evalSpec =
       res <- evalString env "#t"
       res `shouldBe` (Right $ Bool True)
 
+    it "evaluates begin expressions sequentially from left to right" $ do
+      env <- primitiveBindings
+      res <- evalString env "(begin (define x 0) (set! x 5) (+ x 1))"
+      res `shouldBe` (Right $ Number 6)
+
 main = hspec $ do
   evalSpec
