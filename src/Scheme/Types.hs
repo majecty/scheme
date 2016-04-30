@@ -4,7 +4,6 @@ module Scheme.Types
   ( Env
   , LispError(..)
   , LispVal(..)
-  , IOThrowsError
   , showVal
   , ThrowsError
   , EvalM(..)
@@ -17,7 +16,6 @@ import System.IO
 import Text.Megaparsec
 
 type ThrowsError = Either LispError
-type IOThrowsError = ExceptT LispError IO
 
 -- FIXME:: Use Data.StRef instead of Data.IORef.
 type Env = IORef [(String, IORef LispVal)]
