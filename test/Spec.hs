@@ -35,5 +35,10 @@ evalSpec =
       evalString env "(begin (define x 0) (set! x 5) (+ x 1))"
         `shouldReturn` (Right $ Number 6)
 
+    it "defines a variable" $ do
+      env <- newEnv
+      evalString env "(define x 28)" `shouldReturn` (Right $ Number 28)
+      evalString env "x" `shouldReturn` (Right $ Number 28)
+
 main = hspec $ do
   evalSpec
