@@ -16,6 +16,7 @@ import System.Console.Haskeline
 import System.IO
 
 import Scheme.Desugarer
+import Scheme.Env
 import Scheme.Parser
 import Scheme.Types
 
@@ -265,9 +266,6 @@ replLoop = do
       evalResult <- liftIO $ evalString env expr
       outputStrLn $ either show show evalResult
 
-nullEnv :: IO Env
-nullEnv = newIORef []
-
 newEnv :: IO Env
 newEnv = primitiveBindings
   where
@@ -280,44 +278,6 @@ newEnv = primitiveBindings
 runEvalM :: Env -> EvalM LispVal -> IO (Either LispError LispVal)
 runEvalM env action = runExceptT ioThrows
     where ioThrows = (runReaderT . run) action $ env
-
-isBound :: Env -> String -> IO Bool
-isBound envRef var = readIORef envRef >>= return . maybe False (const True) . lookup var
-
-getVar :: String -> EvalM LispVal
-getVar var  =  do
-    envRef <- ask
-    env <- liftIO $ readIORef envRef
-    maybe (throwError $ UnboundVar "Getting an unbound variable" var)
-                             (liftIO . readIORef)
-                             (lookup var env)
-
-setVar :: String -> LispVal -> EvalM LispVal
-setVar var value = do
-    envRef <- ask
-    env <- liftIO $ readIORef envRef
-    maybe (throwError $ UnboundVar "Setting an unbound variable" var)
-        (liftIO . (flip writeIORef value))
-        (lookup var env)
-    return value
-
-defineVar :: String -> LispVal -> EvalM LispVal
-defineVar var value = do
-    envRef <- ask
-    alreadyDefined <- liftIO $ isBound envRef var
-    if alreadyDefined
-       then setVar var value >> return value
-       else liftIO $ do
-          valueRef <- newIORef value
-          env <- readIORef envRef
-          writeIORef envRef ((var, valueRef) : env)
-          return value
-
-bindVars :: Env -> [(String, LispVal)] -> IO Env
-bindVars envRef bindings = readIORef envRef >>= extendEnv bindings >>= newIORef
-    where extendEnv bindings env = fmap (++ env) (mapM addBinding bindings)
-          addBinding (var, value) = do ref <- newIORef value
-                                       return (var, ref)
 
 makeFunc :: Maybe String -> [LispVal] -> [LispVal] -> EvalM LispVal
 makeFunc varargs params body = do

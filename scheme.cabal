@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Scheme
                        Scheme.Desugarer
+                       Scheme.Env
                        Scheme.Evaluator
                        Scheme.Parser
                        Scheme.Types
