@@ -20,6 +20,7 @@ library
                        Scheme.Env
                        Scheme.Evaluator
                        Scheme.Parser
+                       Scheme.Primitives
                        Scheme.Types
   build-depends:       base >= 4.7 && < 5
                      , mtl
