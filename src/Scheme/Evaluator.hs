@@ -250,11 +250,12 @@ runRepl = runInputT defaultSettings replLoop
 replLoop :: InputT IO ()
 replLoop = do
     env <- liftIO newEnv
-    let quitCondition Nothing = True
-        quitCondition (Just "quit") = True
-        quitCondition _ = False
-    until_ quitCondition (getInputLine "Lisp>>> ") (evalAndPrint env . fromJust)
+    until_ quitPred (getInputLine "Lisp>>> ") (evalAndPrint env . fromJust)
   where
+    quitPred Nothing = True
+    quitPred (Just "quit") = True
+    quitPred _ = False
+
     evalAndPrint env expr = do
       evalResult <- liftIO $ evalString env expr
       outputStrLn $ either show show evalResult
