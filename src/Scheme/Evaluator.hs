@@ -48,8 +48,11 @@ eval (List (Atom "lambda" : DottedList params varargs : body)) =
     makeVarargs varargs params body
 eval (List (Atom "lambda" : varargs@(Atom _) : body)) =
     makeVarargs varargs [] body
-eval (List [Atom "load", String filename]) =
-    (load filename) >>= fmap last . mapM (eval . desugar)
+eval (List [Atom "load", String filename]) = do
+    vals <- load filename
+    fmap last $ mapM (desugar' >=> eval) vals
+  where
+    desugar' = liftThrows . desugar
 eval (List (function : args)) = do
     func <- eval function
     argVals <- mapM eval args
@@ -77,9 +80,12 @@ load filename = (liftIO $ readFile filename) >>= liftThrows . readExprList
 
 evalString :: Env -> String -> IO (Either LispError LispVal)
 evalString env expr =
-    let evalResult = (liftThrows $ readExpr expr) >>= eval . desugar :: EvalM LispVal
+    let evalResult = readExpr' >=> desugar' >=> eval $ expr :: EvalM LispVal
     in
         runEvalM env evalResult
+  where
+    readExpr' = liftThrows . readExpr
+    desugar' = liftThrows . desugar
 
 until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
 until_ pred prompt action = do
