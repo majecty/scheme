@@ -11,6 +11,8 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.IORef
+import Data.Maybe
+import System.Console.Haskeline
 import System.IO
 
 import Scheme.Desugarer
@@ -222,12 +224,6 @@ equal [arg1, arg2] = do
     return $ Bool $ (primitiveEquals || let (Bool x) = eqvEquals in x)
 equal badArgList = throwError $ NumArgs 2 badArgList
 
-flushStr :: String -> IO ()
-flushStr str = putStr str >> hFlush stdout
-
-readPrompt :: String -> IO String
-readPrompt prompt = flushStr prompt >> getLine
-
 evalAndPrint :: Env -> String -> IO ()
 evalAndPrint env expr = do
   evalResult <- evalString env expr
@@ -253,10 +249,16 @@ runOne args = do
     (runEvalM env $ eval (List [Atom "load", String (args !! 0)]))
          >>= hPutStrLn stderr . (either show show)
 
--- FIXME: Add auto-completion and history
--- https://hackage.haskell.org/package/haskeline
 runRepl :: IO ()
-runRepl = newEnv >>= until_ (== "quit") (readPrompt "Lisp>>> ") . evalAndPrint
+runRepl = runInputT defaultSettings replLoop
+
+replLoop :: InputT IO ()
+replLoop = do
+    env <- liftIO newEnv
+    let quitCondition Nothing = True
+        quitCondition (Just "quit") = True
+        quitCondition _ = False
+    until_ quitCondition (getInputLine "Lisp>>> ") (liftIO . evalAndPrint env . fromJust)
 
 nullEnv :: IO Env
 nullEnv = newIORef []

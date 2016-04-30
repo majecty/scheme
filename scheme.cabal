@@ -23,6 +23,7 @@ library
   build-depends:       base >= 4.7 && < 5
                      , mtl
                      , megaparsec
+                     , haskeline
   default-language:    Haskell2010
 
 executable scheme-exe
