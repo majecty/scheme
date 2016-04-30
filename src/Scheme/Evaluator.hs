@@ -92,7 +92,7 @@ primitives = [("+", numericBinop (+)),
               ("&&", boolBoolBinop (&&)),
               ("||", boolBoolBinop (||)),
               ("string=?", strBoolBinop (==)),
-              ("string?", strBoolBinop (>)),
+              ("string>?", strBoolBinop (>)),
               ("string<=?", strBoolBinop (<=)),
               ("string>=?", strBoolBinop (>=)),
               ("car", car),
@@ -100,8 +100,15 @@ primitives = [("+", numericBinop (+)),
               ("cons", cons),
               ("eq?", eqv),
               ("eqv?", eqv),
-              ("equal?", equal)]
-
+              ("equal?", equal),
+              -- FIXME: Add char?, vector?
+              ("boolean?", isBoolean),
+              ("pair?", isPair),
+              ("symbol?", isSymbol),
+              ("number?", isNumber),
+              ("string?", isString),
+              ("port?", isPort),
+              ("procedure?", isProcedure)]
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
 numericBinop op singleVal@[_] = throwError $ NumArgs 2 singleVal
@@ -160,6 +167,44 @@ cons badArgList = throwError $ NumArgs 2 badArgList
 eqv :: [LispVal] -> ThrowsError LispVal
 eqv [arg1, arg2] = return . Bool $ arg1 == arg2
 eqv badArgList = throwError $ NumArgs 2 badArgList
+
+isBoolean :: [LispVal] -> ThrowsError LispVal
+isBoolean [(Bool _)] = return . Bool $ True
+isBoolean [_]= return . Bool $ False
+isBoolean badArgList = throwError $ NumArgs 1 badArgList
+
+isPair :: [LispVal] -> ThrowsError LispVal
+isPair [List (x:y:_)] = return . Bool $ True
+isPair [DottedList _ _] = return . Bool $ True
+isPair [_]= return . Bool $ False
+isPair badArgList = throwError $ NumArgs 1 badArgList
+
+isSymbol :: [LispVal] -> ThrowsError LispVal
+isSymbol [Atom _] = return . Bool $ True
+isSymbol [_]= return . Bool $ False
+isSymbol badArgList = throwError $ NumArgs 1 badArgList
+
+isNumber :: [LispVal] -> ThrowsError LispVal
+isNumber [Number _] = return . Bool $ True
+isNumber [_]= return . Bool $ False
+isNumber badArgList = throwError $ NumArgs 1 badArgList
+
+isString :: [LispVal] -> ThrowsError LispVal
+isString [String _] = return . Bool $ True
+isString [_]= return . Bool $ False
+isString badArgList = throwError $ NumArgs 1 badArgList
+
+isPort :: [LispVal] -> ThrowsError LispVal
+isPort [Port _] = return . Bool $ True
+isPort [_]= return . Bool $ False
+isPort badArgList = throwError $ NumArgs 1 badArgList
+
+isProcedure :: [LispVal] -> ThrowsError LispVal
+isProcedure [PrimitiveFunc _] = return . Bool $ True
+isProcedure [IOFunc _] = return . Bool $ True
+isProcedure [Func _ _ _ _] = return . Bool $ True
+isProcedure [_]= return . Bool $ False
+isProcedure badArgList = throwError $ NumArgs 1 badArgList
 
 data Unpacker = forall a. Eq a => AnyUnpacker (LispVal -> ThrowsError a)
 

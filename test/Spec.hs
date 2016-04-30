@@ -44,5 +44,36 @@ evalSpec =
       evalString env "(define x 28)" `shouldReturnRight` Number 28
       evalString env "x" `shouldReturnRight` Number 28
 
+    it "provides type predicates" $ do
+      env <- newEnv
+      evalString env "(boolean? #f)" `shouldReturnRight` Bool True
+      evalString env "(boolean? 0)" `shouldReturnRight` Bool False
+      evalString env "(boolean? '())" `shouldReturnRight` Bool False
+
+      evalString env "(pair? '(a . b))" `shouldReturnRight` Bool True
+      evalString env "(pair? '(a b c))" `shouldReturnRight` Bool True
+      evalString env "(pair? '())" `shouldReturnRight` Bool False
+
+      evalString env "(symbol? 'foo)" `shouldReturnRight` Bool True
+      evalString env "(symbol? (car '(a b)))" `shouldReturnRight` Bool True
+      evalString env "(symbol? \"bar\")" `shouldReturnRight` Bool False
+      evalString env "(symbol? 'nil)" `shouldReturnRight` Bool True
+      evalString env "(symbol? '())" `shouldReturnRight` Bool False
+      evalString env "(symbol? #f)" `shouldReturnRight` Bool False
+
+      evalString env "(number? 123)" `shouldReturnRight` Bool True
+      evalString env "(number? -123)" `shouldReturnRight` Bool True
+
+      evalString env "(string? 'foo)" `shouldReturnRight` Bool False
+      evalString env "(string? \"bar\")" `shouldReturnRight` Bool True
+      evalString env "(string? 'nil)" `shouldReturnRight` Bool False
+      evalString env "(string? '())" `shouldReturnRight` Bool False
+      evalString env "(string? #f)" `shouldReturnRight` Bool False
+
+      evalString env "(procedure? car)" `shouldReturnRight` Bool True
+      evalString env "(procedure? 'car)" `shouldReturnRight` Bool False
+      evalString env "(procedure? (lambda (x) (* x x)))" `shouldReturnRight` Bool True
+      evalString env "(procedure? '(lambda (x) (* x x)))" `shouldReturnRight` Bool False
+
 main = hspec $ do
   evalSpec
