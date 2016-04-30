@@ -75,5 +75,19 @@ evalSpec =
       evalString env "(procedure? (lambda (x) (* x x)))" `shouldReturnRight` Bool True
       evalString env "(procedure? '(lambda (x) (* x x)))" `shouldReturnRight` Bool False
 
+    it "implements string comparison procedures" $ do
+      env <- newEnv
+      evalString env "(string=? \"foo\" \"foo\")" `shouldReturnRight` Bool True
+      evalString env "(string<? \"bar\" \"foo\")" `shouldReturnRight` Bool True
+      evalString env "(string>? \"bar\" \"foo\")" `shouldReturnRight` Bool False
+      evalString env "(string<? \"foo\" \"foz\")" `shouldReturnRight` Bool True
+      evalString env "(string>? \"foo\" \"foz\")" `shouldReturnRight` Bool False
+      evalString env "(string<=? \"bar\" \"foo\")" `shouldReturnRight` Bool True
+      evalString env "(string>=? \"bar\" \"foo\")" `shouldReturnRight` Bool False
+      evalString env "(string<=? \"foo\" \"foz\")" `shouldReturnRight` Bool True
+      evalString env "(string>=? \"foo\" \"foz\")" `shouldReturnRight` Bool False
+      evalString env "(string<=? \"foo\" \"foo\")" `shouldReturnRight` Bool True
+      evalString env "(string>=? \"foo\" \"foo\")" `shouldReturnRight` Bool True
+
 main = hspec $ do
   evalSpec
