@@ -58,6 +58,10 @@ evalSpec =
       evalString env "(pair? '(a b c))" `shouldReturnRight` Bool True
       evalString env "(pair? '())" `shouldReturnRight` Bool False
 
+      evalString env "(list? '(a b c))" `shouldReturnRight` Bool True
+      evalString env "(list? '())" `shouldReturnRight` Bool True
+      evalString env "(list? '(a . b))" `shouldReturnRight` Bool False
+
       evalString env "(symbol? 'foo)" `shouldReturnRight` Bool True
       evalString env "(symbol? (car '(a b)))" `shouldReturnRight` Bool True
       evalString env "(symbol? \"bar\")" `shouldReturnRight` Bool False

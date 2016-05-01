@@ -102,6 +102,11 @@ isPair [DottedList _ _] = return . Bool $ True
 isPair [_]= return . Bool $ False
 isPair badArgList = throwError $ NumArgs 1 badArgList
 
+isList :: [LispVal] -> ThrowsError LispVal
+isList [List _] = return . Bool $ True
+isList [_]= return . Bool $ False
+isList badArgList = throwError $ NumArgs 1 badArgList
+
 isSymbol :: [LispVal] -> ThrowsError LispVal
 isSymbol [Atom _] = return . Bool $ True
 isSymbol [_]= return . Bool $ False
@@ -159,6 +164,7 @@ primitives = [("+", numericBinop (+)),
               -- FIXME: Add char?, vector?
               ("boolean?", isBoolean),
               ("pair?", isPair),
+              ("list?", isList),
               ("symbol?", isSymbol),
               ("number?", isNumber),
               ("string?", isString),
