@@ -134,6 +134,11 @@ isProcedure [Func _ _ _ _] = return . Bool $ True
 isProcedure [_]= return . Bool $ False
 isProcedure badArgList = throwError $ NumArgs 1 badArgList
 
+stringLength :: [LispVal] -> ThrowsError LispVal
+stringLength [String s] = return . Number $ fromIntegral . length $ s
+stringLength [badArg]= throwError $ TypeMismatch "string" badArg
+stringLength badArgList = throwError $ NumArgs 1 badArgList
+
 primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
 primitives = [("+", numericBinop (+)),
               ("-", numericBinop (-)),
@@ -155,6 +160,7 @@ primitives = [("+", numericBinop (+)),
               ("string>?", strBoolBinop (>)),
               ("string<=?", strBoolBinop (<=)),
               ("string>=?", strBoolBinop (>=)),
+              ("string-length", stringLength),
               ("car", car),
               ("cdr", cdr),
               ("cons", cons),

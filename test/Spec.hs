@@ -8,8 +8,10 @@ import Scheme.Desugarer
 import Scheme.Parser
 
 infix 1 `shouldReturnRight`
+infix 1 `shouldFailWith`
 
 action `shouldReturnRight` expected = action >>= (`shouldBe` (Right expected))
+action `shouldFailWith` expected = action >>= (`shouldBe` (Left expected))
 
 evalSpec :: Spec
 evalSpec =
@@ -96,6 +98,12 @@ evalSpec =
       evalString env "(string>=? \"foo\" \"foz\")" `shouldReturnRight` Bool False
       evalString env "(string<=? \"foo\" \"foo\")" `shouldReturnRight` Bool True
       evalString env "(string>=? \"foo\" \"foo\")" `shouldReturnRight` Bool True
+
+    it "implements string-length procedures" $ do
+      env <- newEnv
+      evalString env "(string-length \"\")" `shouldReturnRight` Number 0
+      evalString env "(string-length \"foo\")" `shouldReturnRight` Number 3
+      evalString env "(string-length 'foo)" `shouldFailWith` TypeMismatch "string" (Atom "foo")
 
 desugarSpec :: Spec
 desugarSpec =

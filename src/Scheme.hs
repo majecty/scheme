@@ -1,5 +1,6 @@
 module Scheme
   ( evalString
+  , LispError(..)
   , LispVal(..)
   , newEnv
   , runRepl
