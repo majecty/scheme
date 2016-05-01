@@ -20,7 +20,6 @@ import Scheme.Parser
 import Scheme.Primitives
 import Scheme.Types
 
--- FIXME: Add let
 eval :: LispVal -> EvalM LispVal
 eval val@(String _) = return val
 eval val@(Number _) = return val
