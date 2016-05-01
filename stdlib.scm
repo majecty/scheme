@@ -67,6 +67,7 @@
   (if (zero? k)
     x
     (list-tail (cdr x) (- k 1))))
+(define (list-ref x k)       (car (list-tail x k)))
 (define (mem-helper pred op) (lambda (acc next) (if (and (not acc) (pred (op next))) next acc)))
 (define (memq obj lst)       (fold (mem-helper (curry eq? obj) id) #f lst))
 (define (memv obj lst)       (fold (mem-helper (curry eqv? obj) id) #f lst))
