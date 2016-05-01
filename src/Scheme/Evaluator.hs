@@ -26,7 +26,7 @@ eval val@(String _) = return val
 eval val@(Number _) = return val
 eval val@(Bool _) = return val
 eval (Atom id) = getVar id
-eval (List (Atom "begin" : exps)) = fmap last $ mapM eval exps
+eval (List (Atom "begin" : exps)) = last <$> mapM eval exps
 eval (List [Atom "quote", val]) = return val
 -- FIXME: Make alt optional
 eval (List [Atom "if", pred, conseq, alt]) = do
@@ -50,7 +50,7 @@ eval (List (Atom "lambda" : varargs@(Atom _) : body)) =
     makeVarargs varargs [] body
 eval (List [Atom "load", String filename]) = do
     vals <- load filename
-    fmap last $ mapM (desugar' >=> eval) vals
+    last <$> mapM (desugar' >=> eval) vals
   where
     desugar' = liftThrows . desugar
 eval (List (function : args)) = do
@@ -70,7 +70,7 @@ apply (Func params varargs body closure) args =
            local (const env') evalBody
     where remainingArgs = drop (length params) args
           num = toInteger . length
-          evalBody = fmap last $ mapM eval body
+          evalBody = last <$> mapM eval body
           bindVarArgs arg env = case arg of
               Just argName -> liftIO $ bindVars env [(argName, List $ remainingArgs)]
               Nothing -> return env
@@ -147,7 +147,7 @@ applyProc [func, List args] = apply func args
 applyProc (func : args) = apply func args
 
 readAll :: [LispVal] -> EvalM LispVal
-readAll [String filename] = fmap List $ load filename
+readAll [String filename] = List <$> load filename
 
 builtinPrimitives :: [(String, [LispVal] -> EvalM LispVal)]
 builtinPrimitives = [("apply", applyProc), ("read-all", readAll)]
