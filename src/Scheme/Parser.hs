@@ -32,10 +32,10 @@ readOrThrow parser input = case parse parser "lisp" input of
     Right val -> return val
 
 readExpr :: String -> ThrowsError LispVal
-readExpr = readOrThrow parseExpr
+readExpr = readOrThrow $ sc >> parseExpr
 
 readExprList :: String -> ThrowsError [LispVal]
-readExprList = readOrThrow $ endBy parseExpr sc
+readExprList = readOrThrow $ sc >> endBy parseExpr sc
 
 lispSymbolChar :: Parser Char
 lispSymbolChar = oneOf "!$%&|*+-/:<=>?@^_~#"
