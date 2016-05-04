@@ -3,15 +3,12 @@
 module Scheme.Evaluator
   ( evalString
   , newEnv
-  , runRepl
   , runOne
   ) where
 
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Maybe
-import System.Console.Haskeline
 import System.IO
 
 import Scheme.Desugarer
@@ -92,35 +89,12 @@ evalString env expr =
     readExpr' = liftThrows . readExpr
     desugar' = liftThrows . desugar
 
-until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
-until_ pred prompt action = do
-  result <- prompt
-  if pred result
-     then return ()
-     else action result >> until_ pred prompt action
-
 -- FIXME: Load stdlib.scm before evaluating the program
 runOne :: [String] -> IO ()
 runOne args = do
     env <- newEnv >>= flip bindVars [("args", List $ map String $ drop 1 args)]
     (runEvalM env $ eval (List [Atom "load", String (args !! 0)]))
          >>= hPutStrLn stderr . (either show show)
-
-runRepl :: IO ()
-runRepl = runInputT defaultSettings replLoop
-
-replLoop :: InputT IO ()
-replLoop = do
-    env <- liftIO newEnv
-    until_ quitPred (getInputLine "Lisp>>> ") (evalAndPrint env . fromJust)
-  where
-    quitPred Nothing = True
-    quitPred (Just "quit") = True
-    quitPred _ = False
-
-    evalAndPrint env expr = do
-      evalResult <- liftIO $ evalString env expr
-      outputStrLn $ either show show evalResult
 
 newEnv :: IO Env
 newEnv = primitiveBindings

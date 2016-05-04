@@ -3,7 +3,6 @@ module Scheme
   , LispError(..)
   , LispVal(..)
   , newEnv
-  , runRepl
   , runOne
   ) where
 
