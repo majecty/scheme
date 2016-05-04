@@ -142,6 +142,29 @@ evalSpec =
       evalString env "(string-length \"foo\")" `shouldReturn` (Right $ Number 3)
       evalString env "(string-length 'foo)" `shouldReturn` (Left $ TypeMismatch "string" (Atom "foo"))
 
+    it "implements char predicate procedures" $ do
+      env <- newEnv
+      evalString env "(char-alphabetic? #\\a)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char-alphabetic? #\\A)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char-alphabetic? #\\1)" `shouldReturn` (Right $ Bool False)
+
+      evalString env "(char-numeric? #\\a)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char-numeric? #\\A)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char-numeric? #\\1)" `shouldReturn` (Right $ Bool True)
+
+      evalString env "(char-whitespace? #\\a)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char-whitespace? #\\A)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char-whitespace? #\\space)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char-whitespace? #\\newline)" `shouldReturn` (Right $ Bool True)
+
+      evalString env "(char-upper-case? #\\a)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char-upper-case? #\\A)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char-upper-case? #\\1)" `shouldReturn` (Right $ Bool False)
+
+      evalString env "(char-lower-case? #\\a)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char-lower-case? #\\A)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char-lower-case? #\\1)" `shouldReturn` (Right $ Bool False)
+
     it "implements char-upcase/char-downcase procedures" $ do
       env <- newEnv
       evalString env "(char-upcase #\\a)" `shouldReturn` (Right $ Char 'A')

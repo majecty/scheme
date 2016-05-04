@@ -5,7 +5,7 @@ module Scheme.Primitives
   ) where
 
 import Control.Monad.Except
-import Data.Char (toUpper, toLower)
+import Data.Char ( toUpper, toLower, isAlpha, isDigit, isUpper, isLower, isSpace )
 import System.IO
 
 import Scheme.Parser
@@ -147,6 +147,31 @@ isProcedure [Func _ _ _ _] = return . Bool $ True
 isProcedure [_]= return . Bool $ False
 isProcedure badArgList = throwError $ NumArgs 1 badArgList
 
+charIsAlphabetic :: [LispVal] -> ThrowsError LispVal
+charIsAlphabetic [Char c] = return . Bool $ isAlpha c
+charIsAlphabetic [badArg]= throwError $ TypeMismatch "char" badArg
+charIsAlphabetic badArgList = throwError $ NumArgs 1 badArgList
+
+charIsNumeric :: [LispVal] -> ThrowsError LispVal
+charIsNumeric [Char c] = return . Bool $ isDigit c
+charIsNumeric [badArg]= throwError $ TypeMismatch "char" badArg
+charIsNumeric badArgList = throwError $ NumArgs 1 badArgList
+
+charIsWhitespace :: [LispVal] -> ThrowsError LispVal
+charIsWhitespace [Char c] = return . Bool $ isSpace c
+charIsWhitespace [badArg]= throwError $ TypeMismatch "char" badArg
+charIsWhitespace badArgList = throwError $ NumArgs 1 badArgList
+
+charIsUpperCase :: [LispVal] -> ThrowsError LispVal
+charIsUpperCase [Char c] = return . Bool $ isUpper c
+charIsUpperCase [badArg]= throwError $ TypeMismatch "char" badArg
+charIsUpperCase badArgList = throwError $ NumArgs 1 badArgList
+
+charIsLowerCase :: [LispVal] -> ThrowsError LispVal
+charIsLowerCase [Char c] = return . Bool $ isLower c
+charIsLowerCase [badArg]= throwError $ TypeMismatch "char" badArg
+charIsLowerCase badArgList = throwError $ NumArgs 1 badArgList
+
 charUpcase :: [LispVal] -> ThrowsError LispVal
 charUpcase [Char c] = return . Char $ toUpper c
 charUpcase [badArg]= throwError $ TypeMismatch "char" badArg
@@ -189,6 +214,11 @@ primitives = [("+", numericBinop (+)),
               ("char>?", charBoolBinop (>)),
               ("char<=?", charBoolBinop (<=)),
               ("char>=?", charBoolBinop (>=)),
+              ("char-alphabetic?", charIsAlphabetic),
+              ("char-numeric?", charIsNumeric),
+              ("char-whitespace?", charIsWhitespace),
+              ("char-upper-case?", charIsUpperCase),
+              ("char-lower-case?", charIsLowerCase),
               ("char-upcase", charUpcase),
               ("char-downcase", charDowncase),
               ("car", car),
