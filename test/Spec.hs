@@ -2,6 +2,8 @@ module Main where
 
 import Data.Either
 import Test.Hspec
+import Test.QuickCheck
+import Test.QuickCheck.Monadic
 
 import Scheme
 import Scheme.Desugarer
@@ -146,6 +148,15 @@ evalSpec =
       env <- newEnv
       evalString env "(char->integer #\\a)" `shouldReturn` (Right $ Number 97)
       evalString env "(integer->char 97)" `shouldReturn` (Right $ Char 'a')
+
+    it "implements char->integer as an inverse of integer->char" $ property $
+      \c -> monadicIO $ do
+        env  <- run $ newEnv
+        let p1 = List [Atom "char->integer", Char c]
+        (Right res1) <- run $ evalLispVal env p1
+        let p2 = List [Atom "integer->char", res1]
+        (Right res2) <- run $ evalLispVal env p2
+        assert $ res2 == Char c
 
     it "implements char predicate procedures" $ do
       env <- newEnv
