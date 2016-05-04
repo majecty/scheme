@@ -96,6 +96,32 @@ evalSpec =
       evalString env "(procedure? (lambda (x) (* x x)))" `shouldReturn` (Right $ Bool True)
       evalString env "(procedure? '(lambda (x) (* x x)))" `shouldReturn` (Right $ Bool False)
 
+    it "implements char comparison procedures" $ do
+      env <- newEnv
+      evalString env "(char=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char=? #\\A #\\A)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char=? #\\1 #\\1)" `shouldReturn` (Right $ Bool True)
+
+      evalString env "(char<? #\\a #\\a)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char<? #\\a #\\b)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char<? #\\A #\\B)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char<? #\\1 #\\2)" `shouldReturn` (Right $ Bool True)
+
+      evalString env "(char>? #\\a #\\a)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char>? #\\a #\\b)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char>? #\\A #\\B)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char>? #\\1 #\\2)" `shouldReturn` (Right $ Bool False)
+
+      evalString env "(char<=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char<=? #\\a #\\b)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char<=? #\\A #\\B)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char<=? #\\1 #\\2)" `shouldReturn` (Right $ Bool True)
+
+      evalString env "(char>=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
+      evalString env "(char>=? #\\a #\\b)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char>=? #\\A #\\B)" `shouldReturn` (Right $ Bool False)
+      evalString env "(char>=? #\\1 #\\2)" `shouldReturn` (Right $ Bool False)
+
     it "implements string comparison procedures" $ do
       env <- newEnv
       evalString env "(string=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)

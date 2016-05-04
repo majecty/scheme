@@ -26,6 +26,9 @@ boolBinop unpacker op args = if length args /= 2
 numBoolBinop :: (Integer -> Integer -> Bool) -> [LispVal] -> ThrowsError LispVal
 numBoolBinop = boolBinop unpackNum
 
+charBoolBinop :: (Char -> Char -> Bool) -> [LispVal] -> ThrowsError LispVal
+charBoolBinop = boolBinop unpackChar
+
 strBoolBinop :: (String -> String -> Bool) -> [LispVal] -> ThrowsError LispVal
 strBoolBinop = boolBinop unpackStr
 
@@ -40,6 +43,10 @@ unpackNum (String n) = let parsed = reads n in
                             else return $ fst $ parsed !! 0
 unpackNum (List [n]) = unpackNum n
 unpackNum notNum = throwError $ TypeMismatch "number" notNum
+
+unpackChar :: LispVal -> ThrowsError Char
+unpackChar (Char c) = return c
+unpackChar notChar = throwError $ TypeMismatch "char" notChar
 
 unpackStr :: LispVal -> ThrowsError String
 unpackStr (String s) = return s
@@ -166,6 +173,11 @@ primitives = [("+", numericBinop (+)),
               ("string<=?", strBoolBinop (<=)),
               ("string>=?", strBoolBinop (>=)),
               ("string-length", stringLength),
+              ("char=?", charBoolBinop (==)),
+              ("char<?", charBoolBinop (<)),
+              ("char>?", charBoolBinop (>)),
+              ("char<=?", charBoolBinop (<=)),
+              ("char>=?", charBoolBinop (>=)),
               ("car", car),
               ("cdr", cdr),
               ("cons", cons),
