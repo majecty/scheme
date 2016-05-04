@@ -5,6 +5,7 @@ module Scheme.Primitives
   ) where
 
 import Control.Monad.Except
+import Data.Char (toUpper, toLower)
 import System.IO
 
 import Scheme.Parser
@@ -146,6 +147,16 @@ isProcedure [Func _ _ _ _] = return . Bool $ True
 isProcedure [_]= return . Bool $ False
 isProcedure badArgList = throwError $ NumArgs 1 badArgList
 
+charUpcase :: [LispVal] -> ThrowsError LispVal
+charUpcase [Char c] = return . Char $ toUpper c
+charUpcase [badArg]= throwError $ TypeMismatch "char" badArg
+charUpcase badArgList = throwError $ NumArgs 1 badArgList
+
+charDowncase :: [LispVal] -> ThrowsError LispVal
+charDowncase [Char c] = return . Char $ toLower c
+charDowncase [badArg]= throwError $ TypeMismatch "char" badArg
+charDowncase badArgList = throwError $ NumArgs 1 badArgList
+
 stringLength :: [LispVal] -> ThrowsError LispVal
 stringLength [String s] = return . Number $ fromIntegral . length $ s
 stringLength [badArg]= throwError $ TypeMismatch "string" badArg
@@ -178,6 +189,8 @@ primitives = [("+", numericBinop (+)),
               ("char>?", charBoolBinop (>)),
               ("char<=?", charBoolBinop (<=)),
               ("char>=?", charBoolBinop (>=)),
+              ("char-upcase", charUpcase),
+              ("char-downcase", charDowncase),
               ("car", car),
               ("cdr", cdr),
               ("cons", cons),

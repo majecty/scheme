@@ -142,6 +142,15 @@ evalSpec =
       evalString env "(string-length \"foo\")" `shouldReturn` (Right $ Number 3)
       evalString env "(string-length 'foo)" `shouldReturn` (Left $ TypeMismatch "string" (Atom "foo"))
 
+    it "implements char-upcase/char-downcase procedures" $ do
+      env <- newEnv
+      evalString env "(char-upcase #\\a)" `shouldReturn` (Right $ Char 'A')
+      evalString env "(char-upcase #\\A)" `shouldReturn` (Right $ Char 'A')
+      evalString env "(char-upcase #\\1)" `shouldReturn` (Right $ Char '1')
+      evalString env "(char-downcase #\\A)" `shouldReturn` (Right $ Char 'a')
+      evalString env "(char-downcase #\\a)" `shouldReturn` (Right $ Char 'a')
+      evalString env "(char-downcase #\\1)" `shouldReturn` (Right $ Char '1')
+
 desugarSpec :: Spec
 desugarSpec =
   describe "desugarer" $ do
