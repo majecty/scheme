@@ -142,6 +142,11 @@ evalSpec =
       evalString env "(string-length \"foo\")" `shouldReturn` (Right $ Number 3)
       evalString env "(string-length 'foo)" `shouldReturn` (Left $ TypeMismatch "string" (Atom "foo"))
 
+    it "implements char<->integer conversion procedures" $ do
+      env <- newEnv
+      evalString env "(char->integer #\\a)" `shouldReturn` (Right $ Number 97)
+      evalString env "(integer->char 97)" `shouldReturn` (Right $ Char 'a')
+
     it "implements char predicate procedures" $ do
       env <- newEnv
       evalString env "(char-alphabetic? #\\a)" `shouldReturn` (Right $ Bool True)

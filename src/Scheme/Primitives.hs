@@ -5,7 +5,8 @@ module Scheme.Primitives
   ) where
 
 import Control.Monad.Except
-import Data.Char ( toUpper, toLower, isAlpha, isDigit, isUpper, isLower, isSpace )
+import Data.Char ( toUpper, toLower, isAlpha, isDigit
+                 , isUpper, isLower, isSpace, ord, chr )
 import System.IO
 
 import Scheme.Parser
@@ -172,6 +173,16 @@ charIsLowerCase [Char c] = return . Bool $ isLower c
 charIsLowerCase [badArg]= throwError $ TypeMismatch "char" badArg
 charIsLowerCase badArgList = throwError $ NumArgs 1 badArgList
 
+charToInteger :: [LispVal] -> ThrowsError LispVal
+charToInteger [Char c] = return . Number . fromIntegral . ord $ c
+charToInteger [badArg]= throwError $ TypeMismatch "char" badArg
+charToInteger badArgList = throwError $ NumArgs 1 badArgList
+
+integerToChar :: [LispVal] -> ThrowsError LispVal
+integerToChar [Number c] = return . Char . chr . fromIntegral $ c
+integerToChar [badArg]= throwError $ TypeMismatch "number" badArg
+integerToChar badArgList = throwError $ NumArgs 1 badArgList
+
 charUpcase :: [LispVal] -> ThrowsError LispVal
 charUpcase [Char c] = return . Char $ toUpper c
 charUpcase [badArg]= throwError $ TypeMismatch "char" badArg
@@ -219,6 +230,8 @@ primitives = [("+", numericBinop (+)),
               ("char-whitespace?", charIsWhitespace),
               ("char-upper-case?", charIsUpperCase),
               ("char-lower-case?", charIsLowerCase),
+              ("char->integer", charToInteger),
+              ("integer->char", integerToChar),
               ("char-upcase", charUpcase),
               ("char-downcase", charDowncase),
               ("car", car),
