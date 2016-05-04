@@ -20,6 +20,9 @@ sc = L.space (void spaceChar) lineComment empty
 symbol :: String -> Parser String
 symbol = L.symbol sc
 
+symbol' :: String -> Parser String
+symbol' = L.symbol' sc
+
 quotes :: Parser a -> Parser a
 quotes = between (symbol "\"") (symbol "\"")
 
@@ -39,6 +42,18 @@ readExprList = readOrThrow $ sc >> endBy parseExpr sc
 
 lispSymbolChar :: Parser Char
 lispSymbolChar = oneOf "!$%&|*+-/:<=>?@^_~#"
+
+parseChar :: Parser LispVal
+parseChar = do
+  _  <- try (string "#\\")
+  c  <- anyChar
+  cs <- many (letterChar <|> digitChar)
+  let chracterName = c:cs
+  case chracterName of
+    "space"   -> return $ Char ' '
+    "newline" -> return $ Char '\n'
+    [ch] -> return $ Char ch
+    _ -> fail $ "Unknown character name " ++ chracterName
 
 parseString :: Parser LispVal
 parseString = String <$> quotes (many (noneOf "\""))
@@ -77,6 +92,7 @@ parseDottedListOrList = parens (try parseDottedList <|> parseList)
 
 parseExpr :: Parser LispVal
 parseExpr = try parseNumber
+        <|> parseChar
         <|> parseAtom
         <|> parseString
         <|> parseQuoted

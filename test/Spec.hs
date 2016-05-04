@@ -16,6 +16,15 @@ action `shouldFailWith` expected = action >>= (`shouldBe` (Left expected))
 evalSpec :: Spec
 evalSpec =
   describe "evalString" $ do
+    it "evaluates a char" $ do
+      env <- newEnv
+      evalString env "#\\space" `shouldReturnRight` Char ' '
+      evalString env "#\\newline" `shouldReturnRight` Char '\n'
+      evalString env "#\\a" `shouldReturnRight` Char 'a'
+      evalString env "#\\A" `shouldReturnRight` Char 'A'
+      evalString env "#\\(" `shouldReturnRight` Char '('
+      evalString env "#\\1" `shouldReturnRight` Char '1'
+
     it "evaluates a string" $ do
       env <- newEnv
       evalString env "\"foo\"" `shouldReturnRight` String "foo"

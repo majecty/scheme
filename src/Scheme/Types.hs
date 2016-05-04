@@ -33,6 +33,7 @@ data LispVal = Unspecified
              | List [LispVal]
              | DottedList [LispVal] LispVal
              | Number Integer
+             | Char Char
              | String String
              | Bool Bool
              | Port Handle
@@ -44,6 +45,7 @@ data LispVal = Unspecified
 instance Eq LispVal where
   (Bool arg1) == (Bool arg2) = arg1 == arg2
   (Number arg1) == (Number arg2) = arg1 == arg2
+  (Char arg1) == (Char arg2) = arg1 == arg2
   (String arg1) == (String arg2) = arg1 == arg2
   (Atom arg1) == (Atom arg2) = arg1 == arg2
   (DottedList xs x) == (DottedList ys y) = xs == ys && x == y
@@ -52,6 +54,10 @@ instance Eq LispVal where
 
 showVal :: LispVal -> String
 showVal Unspecified = "<unspecified>"
+showVal (Char c) = case c of
+                     ' '       -> "#\\space"
+                     '\n'      -> "#\\newline"
+                     otherwise -> show c
 showVal (String contents) = "\"" ++ contents ++ "\""
 showVal (Atom name) = name
 showVal (Number contents) = show contents
