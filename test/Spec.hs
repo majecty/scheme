@@ -83,6 +83,14 @@ evalSpec =
       evalString env "(number? 123)" `shouldReturnRight` Bool True
       evalString env "(number? -123)" `shouldReturnRight` Bool True
 
+      evalString env "(char? #\\a)" `shouldReturnRight` Bool True
+      evalString env "(char? #\\newline)" `shouldReturnRight` Bool True
+      evalString env "(char? 'foo)" `shouldReturnRight` Bool False
+      evalString env "(char? \"bar\")" `shouldReturnRight` Bool False
+      evalString env "(char? 'nil)" `shouldReturnRight` Bool False
+      evalString env "(char? '())" `shouldReturnRight` Bool False
+      evalString env "(char? #f)" `shouldReturnRight` Bool False
+
       evalString env "(string? 'foo)" `shouldReturnRight` Bool False
       evalString env "(string? \"bar\")" `shouldReturnRight` Bool True
       evalString env "(string? 'nil)" `shouldReturnRight` Bool False

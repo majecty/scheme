@@ -117,6 +117,11 @@ isNumber [Number _] = return . Bool $ True
 isNumber [_]= return . Bool $ False
 isNumber badArgList = throwError $ NumArgs 1 badArgList
 
+isChar :: [LispVal] -> ThrowsError LispVal
+isChar [Char _] = return . Bool $ True
+isChar [_]= return . Bool $ False
+isChar badArgList = throwError $ NumArgs 1 badArgList
+
 isString :: [LispVal] -> ThrowsError LispVal
 isString [String _] = return . Bool $ True
 isString [_]= return . Bool $ False
@@ -167,12 +172,13 @@ primitives = [("+", numericBinop (+)),
               ("eq?", eqv),
               ("eqv?", eqv),
               ("equal?", equal),
-              -- FIXME: Add char?, vector?
+              -- FIXME: vector?
               ("boolean?", isBoolean),
               ("pair?", isPair),
               ("list?", isList),
               ("symbol?", isSymbol),
               ("number?", isNumber),
+              ("char?", isChar),
               ("string?", isString),
               ("port?", isPort),
               ("procedure?", isProcedure)]
