@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Scheme.Evaluator
-  ( evalString
+  ( evalLispVal
+  , evalString
   , newEnv
   , runOne
   ) where
@@ -80,14 +81,16 @@ apply (Func params varargs body closure) args =
 load :: String -> EvalM [LispVal]
 load filename = (liftIO $ readFile filename) >>= liftThrows . readExprList
 
+evalLispVal :: Env -> LispVal -> IO (Either LispError LispVal)
+evalLispVal env expr =
+  let desugar' = liftThrows . desugar
+      evalResult = desugar' >=> eval $ expr :: EvalM LispVal
+   in runEvalM env evalResult
+
 evalString :: Env -> String -> IO (Either LispError LispVal)
-evalString env expr =
-    let evalResult = readExpr' >=> desugar' >=> eval $ expr :: EvalM LispVal
-    in
-        runEvalM env evalResult
-  where
-    readExpr' = liftThrows . readExpr
-    desugar' = liftThrows . desugar
+evalString env str = case readExpr str of
+                       e@(Left _) -> return e
+                       Right expr -> evalLispVal env expr
 
 -- FIXME: Load stdlib.scm before evaluating the program
 runOne :: [String] -> IO ()

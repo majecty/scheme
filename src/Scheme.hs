@@ -1,5 +1,6 @@
 module Scheme
-  ( evalString
+  ( evalLispVal
+  , evalString
   , LispError(..)
   , LispVal(..)
   , newEnv
