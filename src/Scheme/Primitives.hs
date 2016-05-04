@@ -5,6 +5,8 @@ module Scheme.Primitives
   ) where
 
 import Control.Monad.Except
+import           Data.CaseInsensitive  ( CI )
+import qualified Data.CaseInsensitive as CI
 import Data.Char ( toUpper, toLower, isAlpha, isDigit
                  , isUpper, isLower, isSpace, ord, chr )
 import System.IO
@@ -18,6 +20,13 @@ numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError Lisp
 numericBinop op singleVal@[_] = throwError $ NumArgs 2 singleVal
 numericBinop op params = mapM unpackNum params >>= return . Number . foldl1 op
 
+boolBinopCI :: CI.FoldCase a => (LispVal -> ThrowsError a) -> (a -> a -> Bool) -> [LispVal] -> ThrowsError LispVal
+boolBinopCI unpacker op args = if length args /= 2
+                                 then throwError $ NumArgs 2 args
+                                 else do left <- unpacker $ args !! 0
+                                         right <- unpacker $ args !! 1
+                                         return $ Bool $ (CI.foldCase left) `op` (CI.foldCase right)
+
 boolBinop :: (LispVal -> ThrowsError a) -> (a -> a -> Bool) -> [LispVal] -> ThrowsError LispVal
 boolBinop unpacker op args = if length args /= 2
                              then throwError $ NumArgs 2 args
@@ -28,8 +37,14 @@ boolBinop unpacker op args = if length args /= 2
 numBoolBinop :: (Integer -> Integer -> Bool) -> [LispVal] -> ThrowsError LispVal
 numBoolBinop = boolBinop unpackNum
 
+charBoolBinopCI :: (Char -> Char -> Bool) -> [LispVal] -> ThrowsError LispVal
+charBoolBinopCI = boolBinopCI unpackChar
+
 charBoolBinop :: (Char -> Char -> Bool) -> [LispVal] -> ThrowsError LispVal
 charBoolBinop = boolBinop unpackChar
+
+strBoolBinopCI :: (String -> String -> Bool) -> [LispVal] -> ThrowsError LispVal
+strBoolBinopCI = boolBinopCI unpackStr
 
 strBoolBinop :: (String -> String -> Bool) -> [LispVal] -> ThrowsError LispVal
 strBoolBinop = boolBinop unpackStr
@@ -219,12 +234,22 @@ primitives = [("+", numericBinop (+)),
               ("string>?", strBoolBinop (>)),
               ("string<=?", strBoolBinop (<=)),
               ("string>=?", strBoolBinop (>=)),
+              ("string-ci=?", strBoolBinopCI (==)),
+              ("string-ci<?", strBoolBinopCI (<)),
+              ("string-ci>?", strBoolBinopCI (>)),
+              ("string-ci<=?", strBoolBinopCI (<=)),
+              ("string-ci>=?", strBoolBinopCI (>=)),
               ("string-length", stringLength),
               ("char=?", charBoolBinop (==)),
               ("char<?", charBoolBinop (<)),
               ("char>?", charBoolBinop (>)),
               ("char<=?", charBoolBinop (<=)),
               ("char>=?", charBoolBinop (>=)),
+              ("char-ci=?", charBoolBinopCI (==)),
+              ("char-ci<?", charBoolBinopCI (<)),
+              ("char-ci>?", charBoolBinopCI (>)),
+              ("char-ci<=?", charBoolBinopCI (<=)),
+              ("char-ci>=?", charBoolBinopCI (>=)),
               ("char-alphabetic?", charIsAlphabetic),
               ("char-numeric?", charIsNumeric),
               ("char-whitespace?", charIsWhitespace),
