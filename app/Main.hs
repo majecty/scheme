@@ -17,7 +17,10 @@ until_ pred prompt action = do
 replLoop :: InputT IO ()
 replLoop = do
     env <- liftIO newEnv
-    until_ quitPred (getInputLine "Lisp>>> ") (evalAndPrint env . fromJust)
+    res <- liftIO $ loadStandardLibrary env
+    case res of
+      Left e  -> liftIO $ putStrLn "Error loading stdlib"
+      Right _ -> until_ quitPred (getInputLine "Lisp>>> ") (evalAndPrint env . fromJust)
   where
     quitPred Nothing = True
     quitPred (Just "quit") = True
@@ -26,6 +29,9 @@ replLoop = do
     evalAndPrint env expr = do
       evalResult <- liftIO $ evalString env expr
       outputStrLn $ either show show evalResult
+
+    loadStandardLibrary env =
+      evalLispVal env (List [Atom "load", String "lib/stdlib.scm"])
 
 runRepl :: IO ()
 runRepl = runInputT defaultSettings replLoop
