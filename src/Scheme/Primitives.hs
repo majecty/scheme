@@ -5,6 +5,7 @@ module Scheme.Primitives
   ) where
 
 import Control.Monad.Except
+import Data.Array.IArray
 import           Data.CaseInsensitive  ( CI )
 import qualified Data.CaseInsensitive as CI
 import Data.Char ( toUpper, toLower, isAlpha, isDigit
@@ -166,6 +167,16 @@ isVector [Vector _] = return . Bool $ True
 isVector [_]= return . Bool $ False
 isVector badArgList = throwError $ NumArgs 1 badArgList
 
+listToVector :: [LispVal] -> ThrowsError LispVal
+listToVector [List xs] = return . Vector $ listArray (0, length xs - 1) xs
+listToVector [badArg]= throwError $ TypeMismatch "list" badArg
+listToVector badArgList = throwError $ NumArgs 1 badArgList
+
+vectorToList :: [LispVal] -> ThrowsError LispVal
+vectorToList [Vector vs] = return . List $ elems vs
+vectorToList [badArg]= throwError $ TypeMismatch "vector" badArg
+vectorToList badArgList = throwError $ NumArgs 1 badArgList
+
 isPort :: [LispVal] -> ThrowsError LispVal
 isPort [Port _] = return . Bool $ True
 isPort [_]= return . Bool $ False
@@ -290,6 +301,8 @@ primitives = [("+", numericBinop (+)),
               ("char?", isChar),
               ("string?", isString),
               ("vector?", isVector),
+              ("vector->list", vectorToList),
+              ("list->vector", listToVector),
               ("port?", isPort),
               ("procedure?", isProcedure)]
 

@@ -156,6 +156,13 @@ evalSpec =
       evalString env "(string-length \"foo\")" `shouldReturn` (Right $ Number 3)
       evalString env "(string-length 'foo)" `shouldReturn` (Left $ TypeMismatch "string" (Atom "foo"))
 
+    it "implements list<->vector conversion procedures" $ do
+      env <- newEnv
+      evalString env "(list->vector '(1 2 3))" `shouldReturn`
+        (Right $ Vector $ listArray (0, 2) [Number 1, Number 2, Number 3])
+      evalString env "(vector->list #(1 2 3))" `shouldReturn`
+        (Right $ List [Number 1, Number 2, Number 3])
+
     it "implements symbol<->string conversion procedures" $ do
       env <- newEnv
       evalString env "(symbol->string 'foo)" `shouldReturn` (Right $ String "foo")
