@@ -12,6 +12,7 @@ module Scheme.Types
 
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Array.IArray
 import Data.IORef
 import System.IO
 import Text.Megaparsec
@@ -35,6 +36,7 @@ data LispVal = Unspecified
              | Number Integer
              | Char Char
              | String String
+             | Vector (Array Int LispVal)
              | Bool Bool
              | Port Handle
              | PrimitiveFunc ([LispVal] -> ThrowsError LispVal)
@@ -47,6 +49,7 @@ instance Eq LispVal where
   (Number arg1) == (Number arg2) = arg1 == arg2
   (Char arg1) == (Char arg2) = arg1 == arg2
   (String arg1) == (String arg2) = arg1 == arg2
+  (Vector arg1) == (Vector arg2) = arg1 == arg2
   (Atom arg1) == (Atom arg2) = arg1 == arg2
   (DottedList xs x) == (DottedList ys y) = xs == ys && x == y
   (List arg1) == (List arg2) = arg1 == arg2
@@ -59,6 +62,7 @@ showVal (Char c) = case c of
                      '\n'      -> "#\\newline"
                      otherwise -> show c
 showVal (String contents) = "\"" ++ contents ++ "\""
+showVal (Vector elements) = "#(" ++ unwordsList (elems elements) ++ ")"
 showVal (Atom name) = name
 showVal (Number contents) = show contents
 showVal (Bool True) = "#t"

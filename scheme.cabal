@@ -22,7 +22,8 @@ library
                        Scheme.Parser
                        Scheme.Primitives
                        Scheme.Types
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       array
+                     , base >= 4.7 && < 5
                      , case-insensitive
                      , mtl
                      , megaparsec
@@ -42,7 +43,8 @@ test-suite scheme-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  build-depends:       base
+  build-depends:       array
+                     , base
                      , hspec
                      , QuickCheck
                      , scheme

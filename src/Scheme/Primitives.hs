@@ -161,6 +161,11 @@ isString [String _] = return . Bool $ True
 isString [_]= return . Bool $ False
 isString badArgList = throwError $ NumArgs 1 badArgList
 
+isVector :: [LispVal] -> ThrowsError LispVal
+isVector [Vector _] = return . Bool $ True
+isVector [_]= return . Bool $ False
+isVector badArgList = throwError $ NumArgs 1 badArgList
+
 isPort :: [LispVal] -> ThrowsError LispVal
 isPort [Port _] = return . Bool $ True
 isPort [_]= return . Bool $ False
@@ -275,7 +280,6 @@ primitives = [("+", numericBinop (+)),
               ("eq?", eqv),
               ("eqv?", eqv),
               ("equal?", equal),
-              -- FIXME: vector?
               ("boolean?", isBoolean),
               ("pair?", isPair),
               ("list?", isList),
@@ -285,6 +289,7 @@ primitives = [("+", numericBinop (+)),
               ("number?", isNumber),
               ("char?", isChar),
               ("string?", isString),
+              ("vector?", isVector),
               ("port?", isPort),
               ("procedure?", isProcedure)]
 

@@ -6,6 +6,7 @@ module Scheme.Parser
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Except
+import Data.Array.IArray
 
 import Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as L
@@ -55,6 +56,12 @@ parseChar = do
     [ch] -> return $ Char ch
     _ -> fail $ "Unknown character name " ++ chracterName
 
+parseVector :: Parser LispVal
+parseVector = do
+  _  <- char '#'
+  exprs  <- parens $ endBy parseExpr sc
+  return $ Vector $ listArray (0, length exprs - 1) exprs
+
 parseString :: Parser LispVal
 parseString = String <$> quotes (many (noneOf "\""))
 
@@ -93,6 +100,7 @@ parseDottedListOrList = parens (try parseDottedList <|> parseList)
 parseExpr :: Parser LispVal
 parseExpr = try parseNumber
         <|> parseChar
+        <|> try parseVector
         <|> parseAtom
         <|> parseString
         <|> parseQuoted

@@ -1,5 +1,6 @@
 module Main where
 
+import Data.Array.IArray
 import Data.Either
 import Test.Hspec
 import Test.QuickCheck
@@ -42,6 +43,12 @@ evalSpec =
       evalString env "#t"  `shouldReturn` (Right $ Bool True)
       evalString env "#f"  `shouldReturn` (Right $ Bool False)
       evalString env "'#f" `shouldReturn` (Right $ Bool False)
+
+    it "evaluates a vector" $ do
+      env <- newEnv
+      evalString env "#()"  `shouldReturn` (Right $ Vector $ listArray (0, -1) [])
+      evalString env "#(1 'foo \"bar\")"  `shouldReturn`
+        (Right $ Vector $ listArray (0, 2) [Number 1, List [Atom "quote", Atom "foo"], String "bar"])
 
     it "evaluates begin expressions sequentially from left to right" $ do
       env <- newEnv
@@ -90,6 +97,13 @@ evalSpec =
       evalString env "(string? 'nil)" `shouldReturn` (Right $ Bool False)
       evalString env "(string? '())" `shouldReturn` (Right $ Bool False)
       evalString env "(string? #f)" `shouldReturn` (Right $ Bool False)
+
+      evalString env "(vector? '#())" `shouldReturn` (Right $ Bool True)
+      evalString env "(vector? '#(1 'foo))" `shouldReturn` (Right $ Bool True)
+      evalString env "(vector? 'foo)" `shouldReturn` (Right $ Bool False)
+      evalString env "(vector? \"bar\")" `shouldReturn` (Right $ Bool False)
+      evalString env "(vector? '())" `shouldReturn` (Right $ Bool False)
+      evalString env "(vector? #f)" `shouldReturn` (Right $ Bool False)
 
       evalString env "(procedure? car)" `shouldReturn` (Right $ Bool True)
       evalString env "(procedure? 'car)" `shouldReturn` (Right $ Bool False)

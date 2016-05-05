@@ -20,6 +20,7 @@ import Scheme.Types
 
 eval :: LispVal -> EvalM LispVal
 eval val@(String _) = return val
+eval val@(Vector _) = return val
 eval val@(Char _) = return val
 eval val@(Number _) = return val
 eval val@(Bool _) = return val
