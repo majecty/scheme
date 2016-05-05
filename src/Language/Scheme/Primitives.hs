@@ -5,7 +5,7 @@ module Language.Scheme.Primitives
   ) where
 
 import Control.Monad.Except
-import Data.Array.IArray
+import qualified Data.Array.IArray as IArray
 import           Data.CaseInsensitive  ( CI )
 import qualified Data.CaseInsensitive as CI
 import Data.Char ( toUpper, toLower, isAlpha, isDigit
@@ -168,12 +168,12 @@ isVector [_]= return . Bool $ False
 isVector badArgList = throwError $ NumArgs 1 badArgList
 
 listToVector :: [LispVal] -> ThrowsError LispVal
-listToVector [List xs] = return . Vector $ listArray (0, length xs - 1) xs
+listToVector [List xs] = return . Vector $ IArray.listArray (0, length xs - 1) xs
 listToVector [badArg]= throwError $ TypeMismatch "list" badArg
 listToVector badArgList = throwError $ NumArgs 1 badArgList
 
 vectorToList :: [LispVal] -> ThrowsError LispVal
-vectorToList [Vector vs] = return . List $ elems vs
+vectorToList [Vector vs] = return . List $ IArray.elems vs
 vectorToList [badArg]= throwError $ TypeMismatch "vector" badArg
 vectorToList badArgList = throwError $ NumArgs 1 badArgList
 

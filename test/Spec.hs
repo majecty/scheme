@@ -1,6 +1,6 @@
 module Main where
 
-import Data.Array.IArray
+import qualified Data.Array.IArray as IArray
 import Data.Either
 import Test.Hspec
 import Test.QuickCheck
@@ -46,9 +46,9 @@ evalSpec =
 
     it "evaluates a vector" $ do
       env <- newEnv
-      evalString env "#()"  `shouldReturn` (Right $ Vector $ listArray (0, -1) [])
+      evalString env "#()"  `shouldReturn` (Right $ Vector $ IArray.listArray (0, -1) [])
       evalString env "#(1 'foo \"bar\")"  `shouldReturn`
-        (Right $ Vector $ listArray (0, 2) [Number 1, List [Atom "quote", Atom "foo"], String "bar"])
+        (Right $ Vector $ IArray.listArray (0, 2) [Number 1, List [Atom "quote", Atom "foo"], String "bar"])
 
     it "evaluates begin expressions sequentially from left to right" $ do
       env <- newEnv
@@ -159,7 +159,7 @@ evalSpec =
     it "implements list<->vector conversion procedures" $ do
       env <- newEnv
       evalString env "(list->vector '(1 2 3))" `shouldReturn`
-        (Right $ Vector $ listArray (0, 2) [Number 1, Number 2, Number 3])
+        (Right $ Vector $ IArray.listArray (0, 2) [Number 1, Number 2, Number 3])
       evalString env "(vector->list #(1 2 3))" `shouldReturn`
         (Right $ List [Number 1, Number 2, Number 3])
 

@@ -12,7 +12,8 @@ module Language.Scheme.Types
 
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Array.IArray
+import Data.Array.IArray ( Array )
+import qualified Data.Array.IArray as IArray
 import Data.IORef
 import System.IO
 import Text.Megaparsec
@@ -62,7 +63,7 @@ showVal (Char c) = case c of
                      '\n'      -> "#\\newline"
                      otherwise -> show c
 showVal (String contents) = "\"" ++ contents ++ "\""
-showVal (Vector elements) = "#(" ++ unwordsList (elems elements) ++ ")"
+showVal (Vector elements) = "#(" ++ unwordsList (IArray.elems elements) ++ ")"
 showVal (Atom name) = name
 showVal (Number contents) = show contents
 showVal (Bool True) = "#t"

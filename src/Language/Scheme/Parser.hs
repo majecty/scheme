@@ -6,7 +6,7 @@ module Language.Scheme.Parser
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Except
-import Data.Array.IArray
+import qualified Data.Array.IArray as IArray
 
 import Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as L
@@ -60,7 +60,7 @@ parseVector :: Parser LispVal
 parseVector = do
   _  <- char '#'
   exprs  <- parens $ endBy parseExpr sc
-  return $ Vector $ listArray (0, length exprs - 1) exprs
+  return $ Vector $ IArray.listArray (0, length exprs - 1) exprs
 
 parseString :: Parser LispVal
 parseString = String <$> quotes (many (noneOf "\""))
