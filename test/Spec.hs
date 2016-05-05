@@ -10,163 +10,165 @@ import Language.Scheme
 import Language.Scheme.Desugarer
 import Language.Scheme.Parser
 
+evalStringOne env = (fmap . fmap) last . (evalString env)
+
 evalSpec :: Spec
 evalSpec =
-  describe "evalString" $ do
+  describe "evalStringOne" $ do
     it "evaluates a char" $ do
       env <- newEnv
-      evalString env "#\\space" `shouldReturn` (Right $ Char ' ')
-      evalString env "#\\newline" `shouldReturn` (Right $ Char '\n')
-      evalString env "#\\a" `shouldReturn` (Right $ Char 'a')
-      evalString env "#\\A" `shouldReturn` (Right $ Char 'A')
-      evalString env "#\\(" `shouldReturn` (Right $ Char '(')
-      evalString env "#\\1" `shouldReturn` (Right $ Char '1')
+      evalStringOne env "#\\space" `shouldReturn` (Right $ Char ' ')
+      evalStringOne env "#\\newline" `shouldReturn` (Right $ Char '\n')
+      evalStringOne env "#\\a" `shouldReturn` (Right $ Char 'a')
+      evalStringOne env "#\\A" `shouldReturn` (Right $ Char 'A')
+      evalStringOne env "#\\(" `shouldReturn` (Right $ Char '(')
+      evalStringOne env "#\\1" `shouldReturn` (Right $ Char '1')
 
     it "evaluates a string" $ do
       env <- newEnv
-      evalString env "\"foo\"" `shouldReturn` (Right $ String "foo")
+      evalStringOne env "\"foo\"" `shouldReturn` (Right $ String "foo")
 
     it "evaluates a positive number" $ do
       env <- newEnv
-      evalString env "123" `shouldReturn` (Right $ Number 123)
+      evalStringOne env "123" `shouldReturn` (Right $ Number 123)
 
     it "evaluates a negative number" $ do
       env <- newEnv
-      evalString env "-123" `shouldReturn` (Right . Number . negate $ 123)
+      evalStringOne env "-123" `shouldReturn` (Right . Number . negate $ 123)
 
     it "evaluates an atom" $ do
       env <- newEnv
-      evalString env "'foo" `shouldReturn` (Right $ Atom "foo")
+      evalStringOne env "'foo" `shouldReturn` (Right $ Atom "foo")
 
     it "evaluates a bool value" $ do
       env <- newEnv
-      evalString env "#t"  `shouldReturn` (Right $ Bool True)
-      evalString env "#f"  `shouldReturn` (Right $ Bool False)
-      evalString env "'#f" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "#t"  `shouldReturn` (Right $ Bool True)
+      evalStringOne env "#f"  `shouldReturn` (Right $ Bool False)
+      evalStringOne env "'#f" `shouldReturn` (Right $ Bool False)
 
     it "evaluates a vector" $ do
       env <- newEnv
-      evalString env "#()"  `shouldReturn` (Right $ Vector $ IArray.listArray (0, -1) [])
-      evalString env "#(1 'foo \"bar\")"  `shouldReturn`
+      evalStringOne env "#()"  `shouldReturn` (Right $ Vector $ IArray.listArray (0, -1) [])
+      evalStringOne env "#(1 'foo \"bar\")"  `shouldReturn`
         (Right $ Vector $ IArray.listArray (0, 2) [Number 1, List [Atom "quote", Atom "foo"], String "bar"])
 
     it "evaluates begin expressions sequentially from left to right" $ do
       env <- newEnv
-      evalString env "(begin (define x 0) (set! x 5) (+ x 1))"
+      evalStringOne env "(begin (define x 0) (set! x 5) (+ x 1))"
         `shouldReturn` (Right $ Number 6)
 
     it "defines a variable" $ do
       env <- newEnv
-      evalString env "(define x 28)" `shouldReturn` (Right $ Number 28)
-      evalString env "x" `shouldReturn` (Right $ Number 28)
+      evalStringOne env "(define x 28)" `shouldReturn` (Right $ Number 28)
+      evalStringOne env "x" `shouldReturn` (Right $ Number 28)
 
     it "provides type predicates" $ do
       env <- newEnv
-      evalString env "(boolean? #f)" `shouldReturn` (Right $ Bool True)
-      evalString env "(boolean? 0)" `shouldReturn` (Right $ Bool False)
-      evalString env "(boolean? '())" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(boolean? #f)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(boolean? 0)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(boolean? '())" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(pair? '(a . b))" `shouldReturn` (Right $ Bool True)
-      evalString env "(pair? '(a b c))" `shouldReturn` (Right $ Bool True)
-      evalString env "(pair? '())" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(pair? '(a . b))" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(pair? '(a b c))" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(pair? '())" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(list? '(a b c))" `shouldReturn` (Right $ Bool True)
-      evalString env "(list? '())" `shouldReturn` (Right $ Bool True)
-      evalString env "(list? '(a . b))" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(list? '(a b c))" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(list? '())" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(list? '(a . b))" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(symbol? 'foo)" `shouldReturn` (Right $ Bool True)
-      evalString env "(symbol? (car '(a b)))" `shouldReturn` (Right $ Bool True)
-      evalString env "(symbol? \"bar\")" `shouldReturn` (Right $ Bool False)
-      evalString env "(symbol? 'nil)" `shouldReturn` (Right $ Bool True)
-      evalString env "(symbol? '())" `shouldReturn` (Right $ Bool False)
-      evalString env "(symbol? #f)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(symbol? 'foo)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(symbol? (car '(a b)))" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(symbol? \"bar\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(symbol? 'nil)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(symbol? '())" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(symbol? #f)" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(number? 123)" `shouldReturn` (Right $ Bool True)
-      evalString env "(number? -123)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(number? 123)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(number? -123)" `shouldReturn` (Right $ Bool True)
 
-      evalString env "(char? #\\a)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char? #\\newline)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char? 'foo)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char? \"bar\")" `shouldReturn` (Right $ Bool False)
-      evalString env "(char? 'nil)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char? '())" `shouldReturn` (Right $ Bool False)
-      evalString env "(char? #f)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char? #\\a)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char? #\\newline)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char? 'foo)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char? \"bar\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char? 'nil)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char? '())" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char? #f)" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(string? 'foo)" `shouldReturn` (Right $ Bool False)
-      evalString env "(string? \"bar\")" `shouldReturn` (Right $ Bool True)
-      evalString env "(string? 'nil)" `shouldReturn` (Right $ Bool False)
-      evalString env "(string? '())" `shouldReturn` (Right $ Bool False)
-      evalString env "(string? #f)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string? 'foo)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string? \"bar\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string? 'nil)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string? '())" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string? #f)" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(vector? '#())" `shouldReturn` (Right $ Bool True)
-      evalString env "(vector? '#(1 'foo))" `shouldReturn` (Right $ Bool True)
-      evalString env "(vector? 'foo)" `shouldReturn` (Right $ Bool False)
-      evalString env "(vector? \"bar\")" `shouldReturn` (Right $ Bool False)
-      evalString env "(vector? '())" `shouldReturn` (Right $ Bool False)
-      evalString env "(vector? #f)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(vector? '#())" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(vector? '#(1 'foo))" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(vector? 'foo)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(vector? \"bar\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(vector? '())" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(vector? #f)" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(procedure? car)" `shouldReturn` (Right $ Bool True)
-      evalString env "(procedure? 'car)" `shouldReturn` (Right $ Bool False)
-      evalString env "(procedure? (lambda (x) (* x x)))" `shouldReturn` (Right $ Bool True)
-      evalString env "(procedure? '(lambda (x) (* x x)))" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(procedure? car)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(procedure? 'car)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(procedure? (lambda (x) (* x x)))" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(procedure? '(lambda (x) (* x x)))" `shouldReturn` (Right $ Bool False)
 
     it "implements char comparison procedures" $ do
       env <- newEnv
-      evalString env "(char=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char=? #\\A #\\A)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char=? #\\1 #\\1)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char=? #\\A #\\A)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char=? #\\1 #\\1)" `shouldReturn` (Right $ Bool True)
 
-      evalString env "(char<? #\\a #\\a)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char<? #\\a #\\b)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char<? #\\A #\\B)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char<? #\\1 #\\2)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char<? #\\a #\\a)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char<? #\\a #\\b)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char<? #\\A #\\B)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char<? #\\1 #\\2)" `shouldReturn` (Right $ Bool True)
 
-      evalString env "(char>? #\\a #\\a)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char>? #\\a #\\b)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char>? #\\A #\\B)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char>? #\\1 #\\2)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char>? #\\a #\\a)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char>? #\\a #\\b)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char>? #\\A #\\B)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char>? #\\1 #\\2)" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(char<=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char<=? #\\a #\\b)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char<=? #\\A #\\B)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char<=? #\\1 #\\2)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char<=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char<=? #\\a #\\b)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char<=? #\\A #\\B)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char<=? #\\1 #\\2)" `shouldReturn` (Right $ Bool True)
 
-      evalString env "(char>=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char>=? #\\a #\\b)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char>=? #\\A #\\B)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char>=? #\\1 #\\2)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char>=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char>=? #\\a #\\b)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char>=? #\\A #\\B)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char>=? #\\1 #\\2)" `shouldReturn` (Right $ Bool False)
 
     it "implements string comparison procedures" $ do
       env <- newEnv
-      evalString env "(string=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
-      evalString env "(string<? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool True)
-      evalString env "(string>? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool False)
-      evalString env "(string<? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool True)
-      evalString env "(string>? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool False)
-      evalString env "(string<=? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool True)
-      evalString env "(string>=? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool False)
-      evalString env "(string<=? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool True)
-      evalString env "(string>=? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool False)
-      evalString env "(string<=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
-      evalString env "(string>=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string<? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string<? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string<=? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>=? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string<=? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>=? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string<=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
 
     it "implements string-length procedures" $ do
       env <- newEnv
-      evalString env "(string-length \"\")" `shouldReturn` (Right $ Number 0)
-      evalString env "(string-length \"foo\")" `shouldReturn` (Right $ Number 3)
-      evalString env "(string-length 'foo)" `shouldReturn` (Left $ TypeMismatch "string" (Atom "foo"))
+      evalStringOne env "(string-length \"\")" `shouldReturn` (Right $ Number 0)
+      evalStringOne env "(string-length \"foo\")" `shouldReturn` (Right $ Number 3)
+      evalStringOne env "(string-length 'foo)" `shouldReturn` (Left $ TypeMismatch "string" (Atom "foo"))
 
     it "implements list<->vector conversion procedures" $ do
       env <- newEnv
-      evalString env "(list->vector '(1 2 3))" `shouldReturn`
+      evalStringOne env "(list->vector '(1 2 3))" `shouldReturn`
         (Right $ Vector $ IArray.listArray (0, 2) [Number 1, Number 2, Number 3])
-      evalString env "(vector->list #(1 2 3))" `shouldReturn`
+      evalStringOne env "(vector->list #(1 2 3))" `shouldReturn`
         (Right $ List [Number 1, Number 2, Number 3])
 
     it "implements symbol<->string conversion procedures" $ do
       env <- newEnv
-      evalString env "(symbol->string 'foo)" `shouldReturn` (Right $ String "foo")
-      evalString env "(string->symbol \"foo\")" `shouldReturn` (Right $ Atom "foo")
+      evalStringOne env "(symbol->string 'foo)" `shouldReturn` (Right $ String "foo")
+      evalStringOne env "(string->symbol \"foo\")" `shouldReturn` (Right $ Atom "foo")
 
     it "implements symbol->string as an inverse of string->symbol" $ property $
       \s -> monadicIO $ do
@@ -180,8 +182,8 @@ evalSpec =
 
     it "implements char<->integer conversion procedures" $ do
       env <- newEnv
-      evalString env "(char->integer #\\a)" `shouldReturn` (Right $ Number 97)
-      evalString env "(integer->char 97)" `shouldReturn` (Right $ Char 'a')
+      evalStringOne env "(char->integer #\\a)" `shouldReturn` (Right $ Number 97)
+      evalStringOne env "(integer->char 97)" `shouldReturn` (Right $ Char 'a')
 
     it "implements char->integer as an inverse of integer->char" $ property $
       \c -> monadicIO $ do
@@ -194,35 +196,35 @@ evalSpec =
 
     it "implements char predicate procedures" $ do
       env <- newEnv
-      evalString env "(char-alphabetic? #\\a)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char-alphabetic? #\\A)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char-alphabetic? #\\1)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char-alphabetic? #\\a)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char-alphabetic? #\\A)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char-alphabetic? #\\1)" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(char-numeric? #\\a)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char-numeric? #\\A)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char-numeric? #\\1)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char-numeric? #\\a)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char-numeric? #\\A)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char-numeric? #\\1)" `shouldReturn` (Right $ Bool True)
 
-      evalString env "(char-whitespace? #\\a)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char-whitespace? #\\A)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char-whitespace? #\\space)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char-whitespace? #\\newline)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char-whitespace? #\\a)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char-whitespace? #\\A)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char-whitespace? #\\space)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char-whitespace? #\\newline)" `shouldReturn` (Right $ Bool True)
 
-      evalString env "(char-upper-case? #\\a)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char-upper-case? #\\A)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char-upper-case? #\\1)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char-upper-case? #\\a)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char-upper-case? #\\A)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char-upper-case? #\\1)" `shouldReturn` (Right $ Bool False)
 
-      evalString env "(char-lower-case? #\\a)" `shouldReturn` (Right $ Bool True)
-      evalString env "(char-lower-case? #\\A)" `shouldReturn` (Right $ Bool False)
-      evalString env "(char-lower-case? #\\1)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char-lower-case? #\\a)" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(char-lower-case? #\\A)" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(char-lower-case? #\\1)" `shouldReturn` (Right $ Bool False)
 
     it "implements char-upcase/char-downcase procedures" $ do
       env <- newEnv
-      evalString env "(char-upcase #\\a)" `shouldReturn` (Right $ Char 'A')
-      evalString env "(char-upcase #\\A)" `shouldReturn` (Right $ Char 'A')
-      evalString env "(char-upcase #\\1)" `shouldReturn` (Right $ Char '1')
-      evalString env "(char-downcase #\\A)" `shouldReturn` (Right $ Char 'a')
-      evalString env "(char-downcase #\\a)" `shouldReturn` (Right $ Char 'a')
-      evalString env "(char-downcase #\\1)" `shouldReturn` (Right $ Char '1')
+      evalStringOne env "(char-upcase #\\a)" `shouldReturn` (Right $ Char 'A')
+      evalStringOne env "(char-upcase #\\A)" `shouldReturn` (Right $ Char 'A')
+      evalStringOne env "(char-upcase #\\1)" `shouldReturn` (Right $ Char '1')
+      evalStringOne env "(char-downcase #\\A)" `shouldReturn` (Right $ Char 'a')
+      evalStringOne env "(char-downcase #\\a)" `shouldReturn` (Right $ Char 'a')
+      evalStringOne env "(char-downcase #\\1)" `shouldReturn` (Right $ Char '1')
 
 desugarSpec :: Spec
 desugarSpec =

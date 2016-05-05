@@ -6,6 +6,7 @@ module Language.Scheme.Types
   , LispError(..)
   , LispVal(..)
   , showVal
+  , IOThrowsError
   , ThrowsError
   , EvalM(..)
   ) where
@@ -18,6 +19,7 @@ import Data.IORef
 import System.IO
 import Text.Megaparsec
 
+type IOThrowsError = ExceptT LispError IO
 type ThrowsError = Either LispError
 
 -- FIXME:: Use Data.StRef instead of Data.IORef.

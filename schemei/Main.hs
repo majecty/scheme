@@ -1,6 +1,7 @@
 module Main where
 
 import Control.Monad.IO.Class
+import Data.Foldable
 import Data.Maybe
 import System.Console.Haskeline
 import System.Environment
@@ -26,9 +27,11 @@ replLoop = do
     quitPred (Just "quit") = True
     quitPred _ = False
 
-    evalAndPrint env expr = do
-      evalResult <- liftIO $ evalString env expr
-      outputStrLn $ either show show evalResult
+    evalAndPrint env str = do
+      evalResult <- liftIO $ evalString env str
+      case evalResult of
+        Left  e     -> (outputStrLn . show) e
+        Right exprs -> traverse_ (outputStrLn . show) exprs
 
     loadStandardLibrary env =
       evalLispVal env (List [Atom "load", String "lib/stdlib.scm"])

@@ -82,22 +82,28 @@ apply (Func params varargs body closure) args =
 load :: String -> EvalM [LispVal]
 load filename = (liftIO $ readFile filename) >>= liftThrows . readExprList
 
-evalLispVal :: Env -> LispVal -> IO (Either LispError LispVal)
-evalLispVal env expr =
+evalLispVal' :: Env -> LispVal -> IOThrowsError LispVal
+evalLispVal' env expr =
   let desugar' = liftThrows . desugar
       evalResult = desugar' >=> eval $ expr :: EvalM LispVal
    in runEvalM env evalResult
 
-evalString :: Env -> String -> IO (Either LispError LispVal)
-evalString env str = case readExpr str of
-                       e@(Left _) -> return e
-                       Right expr -> evalLispVal env expr
+evalString' :: Env -> String -> IOThrowsError [LispVal]
+evalString' env str = case readExprList str of
+                        Left e      -> throwError e
+                        Right exprs -> traverse (evalLispVal' env) exprs
+
+evalLispVal :: Env -> LispVal -> IO (Either LispError LispVal)
+evalLispVal env = runExceptT . (evalLispVal' env)
+
+evalString :: Env -> String -> IO (Either LispError [LispVal])
+evalString env = runExceptT . (evalString' env)
 
 -- FIXME: Load stdlib.scm before evaluating the program
 runOne :: [String] -> IO ()
 runOne args = do
     env <- newEnv >>= flip bindVars [("args", List $ map String $ drop 1 args)]
-    (runEvalM env $ eval (List [Atom "load", String (args !! 0)]))
+    (runExceptT $ runEvalM env $ eval (List [Atom "load", String (args !! 0)]))
          >>= hPutStrLn stderr . (either show show)
 
 newEnv :: IO Env
@@ -110,9 +116,8 @@ newEnv = primitiveBindings
                                               ++ map (makeFunc IOFunc) ioPrimitives
                                               ++ map (makeFunc PrimitiveFunc) primitives)
 
-runEvalM :: Env -> EvalM LispVal -> IO (Either LispError LispVal)
-runEvalM env action = runExceptT ioThrows
-    where ioThrows = (runReaderT . run) action $ env
+runEvalM :: Env -> EvalM LispVal -> IOThrowsError LispVal
+runEvalM env action = (runReaderT . run) action $ env
 
 makeFunc :: Maybe String -> [LispVal] -> [LispVal] -> EvalM LispVal
 makeFunc varargs params body = do
