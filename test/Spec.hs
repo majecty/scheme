@@ -144,6 +144,21 @@ evalSpec =
       evalString env "(string-length \"foo\")" `shouldReturn` (Right $ Number 3)
       evalString env "(string-length 'foo)" `shouldReturn` (Left $ TypeMismatch "string" (Atom "foo"))
 
+    it "implements symbol<->string conversion procedures" $ do
+      env <- newEnv
+      evalString env "(symbol->string 'foo)" `shouldReturn` (Right $ String "foo")
+      evalString env "(string->symbol \"foo\")" `shouldReturn` (Right $ Atom "foo")
+
+    it "implements symbol->string as an inverse of string->symbol" $ property $
+      \s -> monadicIO $ do
+        pre $ not $ null s
+        env  <- run $ newEnv
+        let p1 = List [Atom "symbol->string", List [Atom "quote", Atom s]]
+        (Right res1) <- run $ evalLispVal env p1
+        let p2 = List [Atom "string->symbol", res1]
+        (Right res2) <- run $ evalLispVal env p2
+        assert $ res2 == Atom s
+
     it "implements char<->integer conversion procedures" $ do
       env <- newEnv
       evalString env "(char->integer #\\a)" `shouldReturn` (Right $ Number 97)

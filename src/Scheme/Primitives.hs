@@ -136,6 +136,16 @@ isSymbol [Atom _] = return . Bool $ True
 isSymbol [_]= return . Bool $ False
 isSymbol badArgList = throwError $ NumArgs 1 badArgList
 
+symbolToString :: [LispVal] -> ThrowsError LispVal
+symbolToString [Atom s] = return . String $ s
+symbolToString [badArg]= throwError $ TypeMismatch "symbol" badArg
+symbolToString badArgList = throwError $ NumArgs 1 badArgList
+
+stringToSymbol :: [LispVal] -> ThrowsError LispVal
+stringToSymbol [String s] = return . Atom $ s
+stringToSymbol [badArg]= throwError $ TypeMismatch "string" badArg
+stringToSymbol badArgList = throwError $ NumArgs 1 badArgList
+
 isNumber :: [LispVal] -> ThrowsError LispVal
 isNumber [Number _] = return . Bool $ True
 isNumber [_]= return . Bool $ False
@@ -270,6 +280,8 @@ primitives = [("+", numericBinop (+)),
               ("pair?", isPair),
               ("list?", isList),
               ("symbol?", isSymbol),
+              ("symbol->string", symbolToString),
+              ("string->symbol", stringToSymbol),
               ("number?", isNumber),
               ("char?", isChar),
               ("string?", isString),
