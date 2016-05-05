@@ -37,13 +37,11 @@ evalSpec =
       env <- newEnv
       evalString env "'foo" `shouldReturn` (Right $ Atom "foo")
 
-    it "evaluates a true value" $ do
+    it "evaluates a bool value" $ do
       env <- newEnv
-      evalString env "#t" `shouldReturn` (Right $ Bool True)
-
-    it "evaluates a false value" $ do
-      env <- newEnv
-      evalString env "#f" `shouldReturn` (Right $ Bool False)
+      evalString env "#t"  `shouldReturn` (Right $ Bool True)
+      evalString env "#f"  `shouldReturn` (Right $ Bool False)
+      evalString env "'#f" `shouldReturn` (Right $ Bool False)
 
     it "evaluates begin expressions sequentially from left to right" $ do
       env <- newEnv
