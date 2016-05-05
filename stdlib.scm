@@ -60,6 +60,7 @@
 (define (max x . num-list) (fold (lambda (y z) (if (> y z) y z)) x num-list))
 (define (min x . num-list) (fold (lambda (y z) (if (< y z) y z)) x num-list))
 (define (list . objs)       objs)
+(define (vector . objs)     (list->vector objs))
 (define (length lst)        (fold (lambda (x y) (+ x 1)) 0 lst))
 (define (append lst . lsts) (foldr (flip (curry foldr cons)) lst lsts))
 (define (reverse lst)       (fold (flip cons) '() lst))
