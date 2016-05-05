@@ -347,8 +347,8 @@ ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("close-output-port", closePort),
                 ("read", readProc),
                 ("write", writeProc),
-                ("read-contents", readContents)]
--- FIXME: Add display function which prints the value to the stdout
+                ("read-contents", readContents),
+                ("display", display)]
 
 makePort :: IOMode -> [LispVal] -> EvalM LispVal
 makePort mode [String filename] = fmap Port $ liftIO $ openFile filename mode
@@ -371,4 +371,9 @@ writeProc = \case
 readContents :: [LispVal] -> EvalM LispVal
 readContents = \case
   [String filename] -> fmap String $ liftIO $ readFile filename
+
+display :: [LispVal] -> EvalM LispVal
+display = \case
+  [val]       -> liftIO $ putStr (show val) >> return Unspecified
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
