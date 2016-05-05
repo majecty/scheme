@@ -1,5 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
-module Scheme.Primitives
+module Language.Scheme.Primitives
   ( ioPrimitives
   , primitives
   ) where
@@ -12,8 +12,8 @@ import Data.Char ( toUpper, toLower, isAlpha, isDigit
                  , isUpper, isLower, isSpace, ord, chr )
 import System.IO
 
-import Scheme.Parser
-import Scheme.Types
+import Language.Scheme.Parser
+import Language.Scheme.Types
 
 data Unpacker = forall a. Eq a => AnyUnpacker (LispVal -> ThrowsError a)
 

@@ -1,4 +1,4 @@
-module Scheme.Env
+module Language.Scheme.Env
   ( bindVars
   , defineVar
   , getVar
@@ -10,7 +10,7 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Data.IORef
 
-import Scheme.Types
+import Language.Scheme.Types
 
 nullEnv :: IO Env
 nullEnv = newIORef []

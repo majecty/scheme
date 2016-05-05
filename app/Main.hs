@@ -5,7 +5,7 @@ import Data.Maybe
 import System.Console.Haskeline
 import System.Environment
 
-import Scheme
+import Language.Scheme
 
 until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
 until_ pred prompt action = do

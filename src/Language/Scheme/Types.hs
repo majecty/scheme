@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Scheme.Types
+module Language.Scheme.Types
   ( Env
   , liftThrows
   , LispError(..)

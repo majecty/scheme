@@ -1,4 +1,4 @@
-module Scheme.Parser
+module Language.Scheme.Parser
   ( readExpr
   , readExprList
   ) where
@@ -12,7 +12,7 @@ import Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as L
 import Text.Megaparsec.String
 
-import Scheme.Types
+import Language.Scheme.Types
 
 sc :: Parser () -- ‘sc’ stands for “space consumer”
 sc = L.space (void spaceChar) lineComment empty

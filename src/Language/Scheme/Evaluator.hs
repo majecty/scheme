@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Scheme.Evaluator
+module Language.Scheme.Evaluator
   ( evalLispVal
   , evalString
   , newEnv
@@ -12,11 +12,11 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import System.IO
 
-import Scheme.Desugarer
-import Scheme.Env
-import Scheme.Parser
-import Scheme.Primitives
-import Scheme.Types
+import Language.Scheme.Desugarer
+import Language.Scheme.Env
+import Language.Scheme.Parser
+import Language.Scheme.Primitives
+import Language.Scheme.Types
 
 eval :: LispVal -> EvalM LispVal
 eval val@(String _) = return val

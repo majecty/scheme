@@ -6,9 +6,9 @@ import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
 
-import Scheme
-import Scheme.Desugarer
-import Scheme.Parser
+import Language.Scheme
+import Language.Scheme.Desugarer
+import Language.Scheme.Parser
 
 evalSpec :: Spec
 evalSpec =

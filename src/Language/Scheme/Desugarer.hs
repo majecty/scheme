@@ -1,10 +1,10 @@
-module Scheme.Desugarer
+module Language.Scheme.Desugarer
   ( desugar
   ) where
 
 import Control.Monad.Except
 
-import Scheme.Types
+import Language.Scheme.Types
 
 desugar :: LispVal -> ThrowsError LispVal
 desugar expr@(List (Atom "let": _)) = desugarLet expr
