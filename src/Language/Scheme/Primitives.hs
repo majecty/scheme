@@ -1,4 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE LambdaCase #-}
 module Language.Scheme.Primitives
   ( ioPrimitives
   , primitives
@@ -54,27 +55,31 @@ boolBoolBinop :: (Bool -> Bool -> Bool) -> [LispVal] -> ThrowsError LispVal
 boolBoolBinop = boolBinop unpackBool
 
 unpackNum :: LispVal -> ThrowsError Integer
-unpackNum (Number n) = return n
-unpackNum (String n) = let parsed = reads n in
+unpackNum = \case
+  (Number n) -> return n
+  (String n) -> let parsed = reads n in
                           if null parsed
                             then throwError $ TypeMismatch "number" $ String n
                             else return $ fst $ parsed !! 0
-unpackNum (List [n]) = unpackNum n
-unpackNum notNum = throwError $ TypeMismatch "number" notNum
+  (List [n]) -> unpackNum n
+  notNum     -> throwError $ TypeMismatch "number" notNum
 
 unpackChar :: LispVal -> ThrowsError Char
-unpackChar (Char c) = return c
-unpackChar notChar = throwError $ TypeMismatch "char" notChar
+unpackChar = \case
+  (Char c)  -> return c
+  notChar   -> throwError $ TypeMismatch "char" notChar
 
 unpackStr :: LispVal -> ThrowsError String
-unpackStr (String s) = return s
-unpackStr (Number s) = return $ show s
-unpackStr (Bool s) = return $ show s
-unpackStr notString = throwError $ TypeMismatch "string" notString
+unpackStr = \case
+  (String s)  -> return s
+  (Number s)  -> return $ show s
+  (Bool s)    -> return $ show s
+  notString   -> throwError $ TypeMismatch "string" notString
 
 unpackBool :: LispVal -> ThrowsError Bool
-unpackBool (Bool b) = return b
-unpackBool notBool = throwError $ TypeMismatch "boolean" notBool
+unpackBool = \case
+  (Bool b)  -> return b
+  notBool   -> throwError $ TypeMismatch "boolean" notBool
 
 unpackEquals :: LispVal -> LispVal -> Unpacker -> ThrowsError Bool
 unpackEquals arg1 arg2 (AnyUnpacker unpacker) =
@@ -83,161 +88,189 @@ unpackEquals arg1 arg2 (AnyUnpacker unpacker) =
                 return $ unpacked1 == unpacked2
         `catchError` (const $ return False)
 
-
 car :: [LispVal] -> ThrowsError LispVal
-car [List (x : xs)] = return x
-car [DottedList (x : xs) _] = return x
-car [badArg] = throwError $ TypeMismatch "pair" badArg
-car badArgList = throwError $ NumArgs 1 badArgList
+car = \case
+  [List (x : xs)]         -> return x
+  [DottedList (x : xs) _] -> return x
+  [badArg]                -> throwError $ TypeMismatch "pair" badArg
+  badArgList              -> throwError $ NumArgs 1 badArgList
 
 cdr :: [LispVal] -> ThrowsError LispVal
-cdr [List (x : xs)] = return $ List xs
-cdr [DottedList (_ : xs) x] = return $ DottedList xs x
-cdr [DottedList [xs] x] = return x
-cdr [badArg] = throwError $ TypeMismatch "pair" badArg
-cdr badArgList = throwError $ NumArgs 1 badArgList
+cdr = \case
+  [List (x : xs)]         -> return $ List xs
+  [DottedList (_ : xs) x] -> return $ DottedList xs x
+  [DottedList [xs] x]     -> return x
+  [badArg]                -> throwError $ TypeMismatch "pair" badArg
+  badArgList              -> throwError $ NumArgs 1 badArgList
 
 cons :: [LispVal] -> ThrowsError LispVal
-cons [x1, List []] = return $ List [x1]
-cons [x, List xs] = return $ List $ x : xs
-cons [x, DottedList xs xlast] = return $ DottedList (x : xs) xlast
-cons [x1, x2] = return $ DottedList [x1] x2
-cons badArgList = throwError $ NumArgs 2 badArgList
+cons = \case
+  [x1, List []]             -> return $ List [x1]
+  [x, List xs]              -> return $ List $ x : xs
+  [x, DottedList xs xlast]  -> return $ DottedList (x : xs) xlast
+  [x1, x2]                  -> return $ DottedList [x1] x2
+  badArgList                -> throwError $ NumArgs 2 badArgList
 
 equal :: [LispVal] -> ThrowsError LispVal
-equal [arg1, arg2] = do
+equal = \case
+  [arg1, arg2] -> do
     primitiveEquals <- fmap or $ mapM (unpackEquals arg1 arg2)
                       [AnyUnpacker unpackNum, AnyUnpacker unpackStr, AnyUnpacker unpackBool]
     eqvEquals <- eqv [arg1, arg2]
     return $ Bool $ (primitiveEquals || let (Bool x) = eqvEquals in x)
-equal badArgList = throwError $ NumArgs 2 badArgList
+  badArgList -> throwError $ NumArgs 2 badArgList
 
 eqv :: [LispVal] -> ThrowsError LispVal
-eqv [arg1, arg2] = return . Bool $ arg1 == arg2
-eqv badArgList = throwError $ NumArgs 2 badArgList
+eqv = \case
+  [arg1, arg2]  -> return . Bool $ arg1 == arg2
+  badArgList    -> throwError $ NumArgs 2 badArgList
 
 isBoolean :: [LispVal] -> ThrowsError LispVal
-isBoolean [(Bool _)] = return . Bool $ True
-isBoolean [_]= return . Bool $ False
-isBoolean badArgList = throwError $ NumArgs 1 badArgList
+isBoolean = \case
+  [(Bool _)]  -> return . Bool $ True
+  [_]         -> return . Bool $ False
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 isPair :: [LispVal] -> ThrowsError LispVal
-isPair [List (x:y:_)] = return . Bool $ True
-isPair [DottedList _ _] = return . Bool $ True
-isPair [_]= return . Bool $ False
-isPair badArgList = throwError $ NumArgs 1 badArgList
+isPair = \case
+  [List (x:y:_)]    -> return . Bool $ True
+  [DottedList _ _]  -> return . Bool $ True
+  [_]               -> return . Bool $ False
+  badArgList        -> throwError $ NumArgs 1 badArgList
 
 isList :: [LispVal] -> ThrowsError LispVal
-isList [List _] = return . Bool $ True
-isList [_]= return . Bool $ False
-isList badArgList = throwError $ NumArgs 1 badArgList
+isList = \case
+  [(List _)]  -> return . Bool $ True
+  [_]         -> return . Bool $ False
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 isSymbol :: [LispVal] -> ThrowsError LispVal
-isSymbol [Atom _] = return . Bool $ True
-isSymbol [_]= return . Bool $ False
-isSymbol badArgList = throwError $ NumArgs 1 badArgList
+isSymbol = \case
+  [Atom _]   -> return . Bool $ True
+  [_]        -> return . Bool $ False
+  badArgList -> throwError $ NumArgs 1 badArgList
 
 symbolToString :: [LispVal] -> ThrowsError LispVal
-symbolToString [Atom s] = return . String $ s
-symbolToString [badArg]= throwError $ TypeMismatch "symbol" badArg
-symbolToString badArgList = throwError $ NumArgs 1 badArgList
+symbolToString = \case
+  [Atom s]    -> return . String $ s
+  [badArg]    -> throwError $ TypeMismatch "symbol" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 stringToSymbol :: [LispVal] -> ThrowsError LispVal
-stringToSymbol [String s] = return . Atom $ s
-stringToSymbol [badArg]= throwError $ TypeMismatch "string" badArg
-stringToSymbol badArgList = throwError $ NumArgs 1 badArgList
+stringToSymbol = \case
+  [String s]  -> return . Atom $ s
+  [badArg]    -> throwError $ TypeMismatch "string" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 isNumber :: [LispVal] -> ThrowsError LispVal
-isNumber [Number _] = return . Bool $ True
-isNumber [_]= return . Bool $ False
-isNumber badArgList = throwError $ NumArgs 1 badArgList
+isNumber = \case
+  [Number _]  -> return . Bool $ True
+  [_]         -> return . Bool $ False
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 isChar :: [LispVal] -> ThrowsError LispVal
-isChar [Char _] = return . Bool $ True
-isChar [_]= return . Bool $ False
-isChar badArgList = throwError $ NumArgs 1 badArgList
+isChar = \case
+  [Char _]    -> return . Bool $ True
+  [_]         -> return . Bool $ False
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 isString :: [LispVal] -> ThrowsError LispVal
-isString [String _] = return . Bool $ True
-isString [_]= return . Bool $ False
-isString badArgList = throwError $ NumArgs 1 badArgList
+isString = \case
+  [String _]  -> return . Bool $ True
+  [_]         -> return . Bool $ False
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 isVector :: [LispVal] -> ThrowsError LispVal
-isVector [Vector _] = return . Bool $ True
-isVector [_]= return . Bool $ False
-isVector badArgList = throwError $ NumArgs 1 badArgList
+isVector = \case
+  [Vector _]  -> return . Bool $ True
+  [_]         -> return . Bool $ False
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 listToVector :: [LispVal] -> ThrowsError LispVal
-listToVector [List xs] = return . Vector $ IArray.listArray (0, length xs - 1) xs
-listToVector [badArg]= throwError $ TypeMismatch "list" badArg
-listToVector badArgList = throwError $ NumArgs 1 badArgList
+listToVector = \case
+  [List xs]   -> return . Vector $ IArray.listArray (0, length xs - 1) xs
+  [badArg]    -> throwError $ TypeMismatch "list" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 vectorToList :: [LispVal] -> ThrowsError LispVal
-vectorToList [Vector vs] = return . List $ IArray.elems vs
-vectorToList [badArg]= throwError $ TypeMismatch "vector" badArg
-vectorToList badArgList = throwError $ NumArgs 1 badArgList
+vectorToList = \case
+  [Vector vs] -> return . List $ IArray.elems vs
+  [badArg]    -> throwError $ TypeMismatch "vector" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 isPort :: [LispVal] -> ThrowsError LispVal
-isPort [Port _] = return . Bool $ True
-isPort [_]= return . Bool $ False
-isPort badArgList = throwError $ NumArgs 1 badArgList
+isPort = \case
+  [Port _]    -> return . Bool $ True
+  [_]         -> return . Bool $ False
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 isProcedure :: [LispVal] -> ThrowsError LispVal
-isProcedure [PrimitiveFunc _] = return . Bool $ True
-isProcedure [IOFunc _] = return . Bool $ True
-isProcedure [Func _ _ _ _] = return . Bool $ True
-isProcedure [_]= return . Bool $ False
-isProcedure badArgList = throwError $ NumArgs 1 badArgList
+isProcedure = \case
+  [PrimitiveFunc _] -> return . Bool $ True
+  [IOFunc _]        -> return . Bool $ True
+  [Func _ _ _ _]    -> return . Bool $ True
+  [_]               -> return . Bool $ False
+  badArgList        -> throwError $ NumArgs 1 badArgList
 
 charIsAlphabetic :: [LispVal] -> ThrowsError LispVal
-charIsAlphabetic [Char c] = return . Bool $ isAlpha c
-charIsAlphabetic [badArg]= throwError $ TypeMismatch "char" badArg
-charIsAlphabetic badArgList = throwError $ NumArgs 1 badArgList
+charIsAlphabetic = \case
+  [Char c]    -> return . Bool $ isAlpha c
+  [badArg]    -> throwError $ TypeMismatch "char" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 charIsNumeric :: [LispVal] -> ThrowsError LispVal
-charIsNumeric [Char c] = return . Bool $ isDigit c
-charIsNumeric [badArg]= throwError $ TypeMismatch "char" badArg
-charIsNumeric badArgList = throwError $ NumArgs 1 badArgList
+charIsNumeric = \case
+  [Char c]    -> return . Bool $ isDigit c
+  [badArg]    -> throwError $ TypeMismatch "char" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 charIsWhitespace :: [LispVal] -> ThrowsError LispVal
-charIsWhitespace [Char c] = return . Bool $ isSpace c
-charIsWhitespace [badArg]= throwError $ TypeMismatch "char" badArg
-charIsWhitespace badArgList = throwError $ NumArgs 1 badArgList
+charIsWhitespace = \case
+  [Char c]    -> return . Bool $ isSpace c
+  [badArg]    -> throwError $ TypeMismatch "char" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 charIsUpperCase :: [LispVal] -> ThrowsError LispVal
-charIsUpperCase [Char c] = return . Bool $ isUpper c
-charIsUpperCase [badArg]= throwError $ TypeMismatch "char" badArg
-charIsUpperCase badArgList = throwError $ NumArgs 1 badArgList
+charIsUpperCase = \case
+  [Char c]    -> return . Bool $ isUpper c
+  [badArg]    -> throwError $ TypeMismatch "char" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 charIsLowerCase :: [LispVal] -> ThrowsError LispVal
-charIsLowerCase [Char c] = return . Bool $ isLower c
-charIsLowerCase [badArg]= throwError $ TypeMismatch "char" badArg
-charIsLowerCase badArgList = throwError $ NumArgs 1 badArgList
+charIsLowerCase = \case
+  [Char c]    -> return . Bool $ isLower c
+  [badArg]    -> throwError $ TypeMismatch "char" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 charToInteger :: [LispVal] -> ThrowsError LispVal
-charToInteger [Char c] = return . Number . fromIntegral . ord $ c
-charToInteger [badArg]= throwError $ TypeMismatch "char" badArg
-charToInteger badArgList = throwError $ NumArgs 1 badArgList
+charToInteger = \case
+  [Char c]    -> return . Number . fromIntegral . ord $ c
+  [badArg]    -> throwError $ TypeMismatch "char" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 integerToChar :: [LispVal] -> ThrowsError LispVal
-integerToChar [Number c] = return . Char . chr . fromIntegral $ c
-integerToChar [badArg]= throwError $ TypeMismatch "number" badArg
-integerToChar badArgList = throwError $ NumArgs 1 badArgList
+integerToChar = \case
+  [Number c]  -> return . Char . chr . fromIntegral $ c
+  [badArg]    -> throwError $ TypeMismatch "number" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 charUpcase :: [LispVal] -> ThrowsError LispVal
-charUpcase [Char c] = return . Char $ toUpper c
-charUpcase [badArg]= throwError $ TypeMismatch "char" badArg
-charUpcase badArgList = throwError $ NumArgs 1 badArgList
+charUpcase = \case
+  [Char c]    -> return . Char $ toUpper c
+  [badArg]    -> throwError $ TypeMismatch "char" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 charDowncase :: [LispVal] -> ThrowsError LispVal
-charDowncase [Char c] = return . Char $ toLower c
-charDowncase [badArg]= throwError $ TypeMismatch "char" badArg
-charDowncase badArgList = throwError $ NumArgs 1 badArgList
+charDowncase = \case
+  [Char c]    -> return . Char $ toLower c
+  [badArg]    -> throwError $ TypeMismatch "char" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 stringLength :: [LispVal] -> ThrowsError LispVal
-stringLength [String s] = return . Number $ fromIntegral . length $ s
-stringLength [badArg]= throwError $ TypeMismatch "string" badArg
-stringLength badArgList = throwError $ NumArgs 1 badArgList
+stringLength = \case
+  [String s]  -> return . Number $ fromIntegral . length $ s
+  [badArg]    -> throwError $ TypeMismatch "string" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
 primitives = [("+", numericBinop (+)),
@@ -321,16 +354,21 @@ makePort :: IOMode -> [LispVal] -> EvalM LispVal
 makePort mode [String filename] = fmap Port $ liftIO $ openFile filename mode
 
 closePort :: [LispVal] -> EvalM LispVal
-closePort [Port port] = liftIO $ hClose port >> (return $ Bool True)
-closePort _ = return $ Bool False
+closePort = \case
+  [Port port] -> liftIO $ hClose port >> (return $ Bool True)
+  _           -> return $ Bool False
 
 readProc :: [LispVal] -> EvalM LispVal
-readProc [] = readProc [Port stdin]
-readProc [Port port] = (liftIO $ hGetLine stdin) >>= liftThrows . readExpr
+readProc = \case
+  []          -> readProc [Port stdin]
+  [Port port] -> (liftIO $ hGetLine stdin) >>= liftThrows . readExpr
 
 writeProc :: [LispVal] -> EvalM LispVal
-writeProc [obj] = writeProc [obj, Port stdout]
-writeProc [obj, Port port] = liftIO $ hPrint port obj >> (return $ Bool True)
+writeProc = \case
+  [obj]             -> writeProc [obj, Port stdout]
+  [obj, Port port]  -> liftIO $ hPrint port obj >> (return $ Bool True)
 
 readContents :: [LispVal] -> EvalM LispVal
-readContents [String filename] = fmap String $ liftIO $ readFile filename
+readContents = \case
+  [String filename] -> fmap String $ liftIO $ readFile filename
+
