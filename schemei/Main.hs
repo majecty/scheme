@@ -1,9 +1,12 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module Main where
 
 import Control.Monad.IO.Class
 import Data.Foldable
 import Data.Maybe
 import System.Console.Haskeline
+import System.Directory
+import System.FilePath
 import System.Environment
 
 import Language.Scheme
@@ -14,6 +17,12 @@ until_ pred prompt action = do
   if pred result
      then return ()
      else action result >> until_ pred prompt action
+
+schemeHistoryFile :: IO FilePath
+schemeHistoryFile = do
+  dataDir <- getAppUserDataDirectory "scheme"
+  createDirectoryIfMissing True dataDir
+  return $ dataDir </> "scheme_history"
 
 replLoop :: InputT IO ()
 replLoop = do
@@ -37,7 +46,10 @@ replLoop = do
       evalLispVal env (List [Atom "load", String "lib/stdlib.scm"])
 
 runRepl :: IO ()
-runRepl = runInputT defaultSettings replLoop
+runRepl = do
+  historyFile <- Just <$> schemeHistoryFile
+  let settings = defaultSettings { historyFile }
+  runInputT settings replLoop
 
 main :: IO ()
 main = do args <- getArgs
