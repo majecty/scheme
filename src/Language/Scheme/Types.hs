@@ -30,7 +30,7 @@ newtype EvalM a = EvalM {
 
 liftThrows :: ThrowsError a -> EvalM a
 liftThrows (Left err) = EvalM $ lift $ throwError err
-liftThrows (Right val) = EvalM $ lift $ return val
+liftThrows (Right val) = EvalM $ lift $ pure val
 
 data LispVal = Unspecified
              | Atom String

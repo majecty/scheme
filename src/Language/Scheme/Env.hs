@@ -16,7 +16,7 @@ nullEnv :: IO Env
 nullEnv = newIORef []
 
 isBound :: Env -> String -> IO Bool
-isBound envRef var = readIORef envRef >>= return . maybe False (const True) . lookup var
+isBound envRef var = readIORef envRef >>= pure . maybe False (const True) . lookup var
 
 getVar :: String -> EvalM LispVal
 getVar var  =  do
@@ -33,7 +33,7 @@ setVar var value = do
     maybe (throwError $ UnboundVar "Setting an unbound variable" var)
         (liftIO . (flip writeIORef value))
         (lookup var env)
-    return value
+    pure value
 
 
 defineVar :: String -> LispVal -> EvalM LispVal
@@ -41,17 +41,17 @@ defineVar var value = do
     envRef <- ask
     alreadyDefined <- liftIO $ isBound envRef var
     if alreadyDefined
-       then setVar var value >> return value
+       then setVar var value >> pure value
        else liftIO $ do
           valueRef <- newIORef value
           env <- readIORef envRef
           writeIORef envRef ((var, valueRef) : env)
-          return value
+          pure value
 
 bindVars :: Env -> [(String, LispVal)] -> IO Env
 bindVars envRef bindings = readIORef envRef >>= extendEnv bindings >>= newIORef
     where extendEnv bindings env = fmap (++ env) (mapM addBinding bindings)
           addBinding (var, value) = do ref <- newIORef value
-                                       return (var, ref)
+                                       pure (var, ref)
 
 

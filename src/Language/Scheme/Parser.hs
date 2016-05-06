@@ -33,7 +33,7 @@ parens = between (symbol "(") (symbol ")")
 readOrThrow :: Parser a -> String -> ThrowsError a
 readOrThrow parser input = case parse parser "lisp" input of
     Left err -> throwError $ Parser err
-    Right val -> return val
+    Right val -> pure val
 
 readExpr :: String -> ThrowsError LispVal
 readExpr = readOrThrow $ sc >> parseExpr
@@ -51,16 +51,16 @@ parseChar = do
   cs <- many (letterChar <|> digitChar)
   let chracterName = c:cs
   case chracterName of
-    "space"   -> return $ Char ' '
-    "newline" -> return $ Char '\n'
-    [ch] -> return $ Char ch
+    "space"   -> pure $ Char ' '
+    "newline" -> pure $ Char '\n'
+    [ch] -> pure $ Char ch
     _ -> fail $ "Unknown character name " ++ chracterName
 
 parseVector :: Parser LispVal
 parseVector = do
   _  <- char '#'
   exprs  <- parens $ endBy parseExpr sc
-  return $ Vector $ IArray.listArray (0, length exprs - 1) exprs
+  pure $ Vector $ IArray.listArray (0, length exprs - 1) exprs
 
 parseString :: Parser LispVal
 parseString = String <$> quotes (many (noneOf "\""))
@@ -69,7 +69,7 @@ parseAtom :: Parser LispVal
 parseAtom = do first <- letterChar <|> lispSymbolChar
                rest <- many (letterChar <|> digitChar <|> lispSymbolChar)
                let atom = first : rest
-               return $ case atom of
+               pure $ case atom of
                           "#t" -> Bool True
                           "#f" -> Bool False
                           otherwise -> Atom atom
@@ -78,7 +78,7 @@ parseAtom = do first <- letterChar <|> lispSymbolChar
 parseNumber :: Parser LispVal
 parseNumber = do sign <- optional $ oneOf "+-"
                  digits <- some digitChar
-                 return $ case sign of
+                 pure $ case sign of
                             Just '-' -> Number . negate . read $ digits
                             otherwise -> Number . read $ digits
 
@@ -92,7 +92,7 @@ parseQuoted :: Parser LispVal
 parseQuoted = do
     symbol "'"
     x <- parseExpr
-    return $ List [Atom "quote", x]
+    pure $ List [Atom "quote", x]
 
 parseDottedListOrList :: Parser LispVal
 parseDottedListOrList = parens (try parseDottedList <|> parseList)

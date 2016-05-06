@@ -15,14 +15,14 @@ until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
 until_ pred prompt action = do
   result <- prompt
   if pred result
-     then return ()
+     then pure ()
      else action result >> until_ pred prompt action
 
 schemeHistoryFile :: IO FilePath
 schemeHistoryFile = do
   dataDir <- getAppUserDataDirectory "scheme"
   createDirectoryIfMissing True dataDir
-  return $ dataDir </> "scheme_history"
+  pure $ dataDir </> "scheme_history"
 
 replLoop :: InputT IO ()
 replLoop = do

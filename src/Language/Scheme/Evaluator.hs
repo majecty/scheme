@@ -22,18 +22,18 @@ import Language.Scheme.Primitives
 import Language.Scheme.Types
 
 eval :: LispVal -> EvalM LispVal
-eval val@(String _) = return val
-eval val@(Vector _) = return val
-eval val@(Char _) = return val
-eval val@(Number _) = return val
-eval val@(Bool _) = return val
+eval val@(String _) = pure val
+eval val@(Vector _) = pure val
+eval val@(Char _) = pure val
+eval val@(Number _) = pure val
+eval val@(Bool _) = pure val
 eval (Atom id) = getVar id
 eval (List (Atom "begin" : exps)) = last <$> traverse eval exps
-eval (List [Atom "quote", val]) = return val
+eval (List [Atom "quote", val]) = pure val
 eval (List [Atom "if", pred, conseq]) = do
     result <- eval pred
     case result of
-      Bool False -> return $ Unspecified
+      Bool False -> pure $ Unspecified
       otherwise -> eval conseq
 eval form@(List [Atom "if", pred, conseq, alt]) = do
     result <- eval pred
@@ -81,7 +81,7 @@ apply (Func params varargs body closure) args =
           evalBody = last <$> traverse eval body
           bindVarArgs arg env = case arg of
               Just argName -> liftIO $ bindVars env [(argName, List $ remainingArgs)]
-              Nothing -> return env
+              Nothing -> pure env
 
 load :: String -> EvalM [LispVal]
 load filename = (liftIO $ readFile filename) >>= liftThrows . readExprList
@@ -136,7 +136,7 @@ runEvalM env action = (runReaderT . run) action $ env
 makeFunc :: Maybe String -> [LispVal] -> [LispVal] -> EvalM LispVal
 makeFunc varargs params body = do
   env <- ask
-  return $ Func (map showVal params) varargs body env
+  pure $ Func (map showVal params) varargs body env
 
 makeNormalFunc :: [LispVal] -> [LispVal] -> EvalM LispVal
 makeNormalFunc = makeFunc Nothing
