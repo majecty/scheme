@@ -21,6 +21,7 @@ library
                        Language.Scheme.Env
                        Language.Scheme.Evaluator
                        Language.Scheme.Parser
+                       Language.Scheme.Pretty
                        Language.Scheme.Primitives
                        Language.Scheme.Types
   other-modules:       Paths_scheme
@@ -29,6 +30,7 @@ library
                      , case-insensitive
                      , mtl
                      , megaparsec
+                     , pretty
   default-language:    Haskell2010
 
 executable schemei
@@ -48,6 +50,7 @@ executable schemefmt
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
+                     , mtl
                      , scheme
   default-language:    Haskell2010
 
