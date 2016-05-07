@@ -25,7 +25,7 @@ instance Pretty LispVal where
   pretty form@(Vector arr) = text $ show form
   pretty (List [atom@(Atom x)]) = char '(' <> pretty atom <> char ')'
   pretty (List [atom@(Atom "quote"), x]) = text "'" <> pretty x
-  pretty (List (atom@(Atom "quote"):xs)) = text "'(" <> prettyList xs <> char ')'
+  pretty (List []) = text "()"
   pretty (List (x:xs)) =
     char '(' <> pretty x <+> nest (length (show x)) (prettyList xs <> char ')')
   pretty _ = empty
