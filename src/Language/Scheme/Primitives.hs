@@ -180,6 +180,23 @@ isString = \case
   [_]         -> pure . Bool $ False
   badArgList  -> throwError $ NumArgs 1 badArgList
 
+substring :: [LispVal] -> ThrowsError LispVal
+substring = \case
+  [String s, Number start, Number end] -> do
+    let start' = fromIntegral start
+    let end' = fromIntegral end
+    when (not $ inRange s start') $ throwError $ OutOfRange (0, length s) start'
+    when (not $ inRange s end')   $ throwError $ OutOfRange (0, length s) start'
+    when (start' > end')        $ throwError $ OutOfRange (start', length s) end'
+    pure . String $ substring' start' end' s
+  [badArg, Number _, Number _] -> throwError $ TypeMismatch "string" badArg
+  [_, badArg, Number _] -> throwError $ TypeMismatch "number" badArg
+  [_, _, badArg] -> throwError $ TypeMismatch "number" badArg
+  badArgList  -> throwError $ NumArgs 3 badArgList
+  where
+    inRange s index = index >=0 && index <= length s
+    substring' start end = take (end - start) . drop start
+
 isVector :: [LispVal] -> ThrowsError LispVal
 isVector = \case
   [Vector _]  -> pure . Bool $ True
@@ -333,6 +350,7 @@ primitives = [("+", numericBinop (+)),
               ("number?", isNumber),
               ("char?", isChar),
               ("string?", isString),
+              ("substring", substring),
               ("vector?", isVector),
               ("vector->list", vectorToList),
               ("list->vector", listToVector),
