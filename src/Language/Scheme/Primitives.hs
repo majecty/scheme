@@ -20,7 +20,7 @@ data Unpacker = forall a. Eq a => AnyUnpacker (LispVal -> ThrowsError a)
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
 numericBinop op singleVal@[_] = throwError $ NumArgs 2 singleVal
-numericBinop op params = mapM unpackNum params >>= pure . Number . foldl1 op
+numericBinop op params = traverse unpackNum params >>= pure . Number . foldl1 op
 
 boolBinopCI :: CI.FoldCase a => (LispVal -> ThrowsError a) -> (a -> a -> Bool) -> [LispVal] -> ThrowsError LispVal
 boolBinopCI unpacker op args = if length args /= 2
@@ -114,7 +114,7 @@ cons = \case
 equal :: [LispVal] -> ThrowsError LispVal
 equal = \case
   [arg1, arg2] -> do
-    primitiveEquals <- fmap or $ mapM (unpackEquals arg1 arg2)
+    primitiveEquals <- fmap or $ traverse (unpackEquals arg1 arg2)
                       [AnyUnpacker unpackNum, AnyUnpacker unpackStr, AnyUnpacker unpackBool]
     eqvEquals <- eqv [arg1, arg2]
     pure $ Bool $ (primitiveEquals || let (Bool x) = eqvEquals in x)

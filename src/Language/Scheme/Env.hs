@@ -50,7 +50,7 @@ defineVar var value = do
 
 bindVars :: Env -> [(String, LispVal)] -> IO Env
 bindVars envRef bindings = readIORef envRef >>= extendEnv bindings >>= newIORef
-    where extendEnv bindings env = fmap (++ env) (mapM addBinding bindings)
+    where extendEnv bindings env = fmap (++ env) (traverse addBinding bindings)
           addBinding (var, value) = do ref <- newIORef value
                                        pure (var, ref)
 
