@@ -15,7 +15,7 @@ $ stack build
 ## Run
 
 ```
-$ stack exec scheme-exe
+$ stack exec schemei
 ```
 
 ## Contributors
