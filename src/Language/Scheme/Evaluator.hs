@@ -114,7 +114,7 @@ withStandardLibrary :: (MonadIO m) => Env -> m () -> m ()
 withStandardLibrary env action = do
     res <- liftIO $ loadStandardLibrary env
     case res of
-      Left e  -> liftIO $ putStrLn "Error loading stdlib"
+      Left e  -> liftIO $ putStrLn $ "Error loading stdlib: " ++ show e
       Right _ -> action
   where loadStandardLibrary env = do
             stdlibPath <- getDataFileName "lib/stdlib.scm"
