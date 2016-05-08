@@ -2,6 +2,10 @@ module Main where
 
 import qualified Data.Array.IArray as IArray
 import Data.Either
+import Data.Foldable
+import Data.List
+import System.Directory
+import System.FilePath
 import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
@@ -9,6 +13,7 @@ import Test.QuickCheck.Monadic
 import Language.Scheme
 import Language.Scheme.Desugarer
 import Language.Scheme.Parser
+import Language.Scheme.Pretty
 
 evalStringOne env = (fmap . fmap) last . (evalString env)
 
@@ -273,6 +278,25 @@ desugarSpec =
       shouldNotDesugar "#t"
       shouldNotDesugar "()"
 
+prettyPrintTest :: FilePath -> IO ()
+prettyPrintTest path = do
+  contents <- readFile path
+  let Right exprs = readExprList contents
+  let pp = prettyPrint exprs
+  contents `shouldBe` pp
+
+prettyPrintSpec :: Spec
+prettyPrintSpec = do
+  describe "prettyPrint" $ do
+    let testSchemeDirectory = "test" </> "scheme"
+    let isSchemeFile f = ".scm" `isSuffixOf` f
+    let getAllSchemePaths path = map (path </>) . filter isSchemeFile <$> getDirectoryContents path
+
+    it "is the inverse of readExprList" $ do
+      allSchemes <- getAllSchemePaths testSchemeDirectory
+      traverse_ prettyPrintTest allSchemes
+
 main = hspec $ do
   evalSpec
   desugarSpec
+  prettyPrintSpec
