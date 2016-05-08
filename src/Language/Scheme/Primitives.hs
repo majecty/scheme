@@ -13,7 +13,7 @@ import Data.Char ( toUpper, toLower, isAlpha, isDigit
                  , isUpper, isLower, isSpace, ord, chr )
 import System.IO
 
-import Language.Scheme.Parser
+import Language.Scheme.Reader
 import Language.Scheme.Types
 
 data Unpacker = forall a. Eq a => AnyUnpacker (LispVal -> ThrowsError a)

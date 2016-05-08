@@ -9,5 +9,5 @@ module Language.Scheme
   ) where
 
 import Language.Scheme.Evaluator
-import Language.Scheme.Parser
+import Language.Scheme.Reader
 import Language.Scheme.Types

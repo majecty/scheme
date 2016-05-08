@@ -17,8 +17,8 @@ import Paths_scheme
 
 import Language.Scheme.Desugarer
 import Language.Scheme.Env
-import Language.Scheme.Parser
 import Language.Scheme.Primitives
+import Language.Scheme.Reader
 import Language.Scheme.Types
 
 eval :: LispVal -> EvalM LispVal

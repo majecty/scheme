@@ -1,4 +1,4 @@
-module Language.Scheme.Parser
+module Language.Scheme.Reader
   ( readExpr
   , readExprList
   ) where

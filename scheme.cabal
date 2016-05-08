@@ -20,9 +20,9 @@ library
                        Language.Scheme.Desugarer
                        Language.Scheme.Env
                        Language.Scheme.Evaluator
-                       Language.Scheme.Parser
                        Language.Scheme.Pretty
                        Language.Scheme.Primitives
+                       Language.Scheme.Reader
                        Language.Scheme.Types
   other-modules:       Paths_scheme
   build-depends:       array

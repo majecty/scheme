@@ -6,8 +6,8 @@ import Data.Foldable
 import System.Environment
 import System.IO
 
-import Language.Scheme.Parser
 import Language.Scheme.Pretty
+import Language.Scheme.Reader
 
 data FormatError = FormatError deriving (Eq, Show)
 type FormatM = ExceptT FormatError IO

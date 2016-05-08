@@ -12,8 +12,8 @@ import Test.QuickCheck.Monadic
 
 import Language.Scheme
 import Language.Scheme.Desugarer
-import Language.Scheme.Parser
 import Language.Scheme.Pretty
+import Language.Scheme.Reader
 
 evalStringOne env = (fmap . fmap) last . (evalString env)
 
