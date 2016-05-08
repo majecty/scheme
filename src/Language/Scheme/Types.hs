@@ -1,12 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
+{-# LANGUAGE LambdaCase #-}
 module Language.Scheme.Types
   ( Env
   , liftThrows
   , LispError(..)
   , LispVal(..)
-  , showVal
+  , lispValToSExpr
   , IOThrowsError
+  , SExpr(..)
+  , sexprToLispVal
   , ThrowsError
   , EvalM(..)
   ) where
@@ -32,6 +34,30 @@ liftThrows :: ThrowsError a -> EvalM a
 liftThrows (Left err) = EvalM $ lift $ throwError err
 liftThrows (Right val) = EvalM $ lift $ pure val
 
+data SExpr = SAtom String
+           | SList [SExpr]
+           | SDottedList [SExpr] SExpr
+           | SNumber Integer
+           | SChar Char
+           | SString String
+           | SVector (Array Int SExpr)
+           | SBool Bool
+           deriving (Eq)
+
+instance Show SExpr where
+  show (SChar c) = case c of
+                       ' '       -> "#\\space"
+                       '\n'      -> "#\\newline"
+                       otherwise -> show c
+  show (SString contents) = "\"" ++ contents ++ "\""
+  show (SVector elements) = "#(" ++ unwordsList (IArray.elems elements) ++ ")"
+  show (SAtom name) = name
+  show (SNumber contents) = show contents
+  show (SBool True) = "#t"
+  show (SBool False) = "#f"
+  show (SList contents) = "(" ++ unwordsList contents ++ ")"
+  show (SDottedList head tail) = "(" ++ unwordsList head ++ " . " ++ show tail ++ ")"
+
 data LispVal = Unspecified
              | Atom String
              | List [LispVal]
@@ -45,7 +71,7 @@ data LispVal = Unspecified
              | PrimitiveFunc ([LispVal] -> ThrowsError LispVal)
              | IOFunc ([LispVal] -> EvalM LispVal)
              | Func {params :: [String], vararg :: (Maybe String),
-                      body :: [LispVal], closure :: Env}
+                      body :: [SExpr], closure :: Env}
 
 instance Eq LispVal where
   (Bool arg1) == (Bool arg2) = arg1 == arg2
@@ -58,35 +84,55 @@ instance Eq LispVal where
   (List arg1) == (List arg2) = arg1 == arg2
   _ == _ = False
 
-showVal :: LispVal -> String
-showVal Unspecified = "<unspecified>"
-showVal (Char c) = case c of
-                     ' '       -> "#\\space"
-                     '\n'      -> "#\\newline"
-                     otherwise -> show c
-showVal (String contents) = "\"" ++ contents ++ "\""
-showVal (Vector elements) = "#(" ++ unwordsList (IArray.elems elements) ++ ")"
-showVal (Atom name) = name
-showVal (Number contents) = show contents
-showVal (Bool True) = "#t"
-showVal (Bool False) = "#f"
-showVal (List contents) = "(" ++ unwordsList contents ++ ")"
-showVal (DottedList head tail) = "(" ++ unwordsList head ++ " . " ++ showVal tail ++ ")"
-showVal (Port _) = "<IO port>"
-showVal (IOFunc _) = "<IO primitive>"
-showVal (PrimitiveFunc _) = "<primitive>"
-showVal (Func {params = args, vararg = varargs, body = body, closure = env}) =
-  "(lambda (" ++ unwords (map show args) ++
-     (case varargs of
-        Nothing -> ""
-        Just arg -> " . " ++ arg) ++ ") ...)"
+instance Show LispVal where
+  show Unspecified = "<unspecified>"
+  show (Char c) = case c of
+                       ' '       -> "#\\space"
+                       '\n'      -> "#\\newline"
+                       otherwise -> show c
+  show (String contents) = "\"" ++ contents ++ "\""
+  show (Vector elements) = "#(" ++ unwordsList (IArray.elems elements) ++ ")"
+  show (Atom name) = name
+  show (Number contents) = show contents
+  show (Bool True) = "#t"
+  show (Bool False) = "#f"
+  show (List contents) = "(" ++ unwordsList contents ++ ")"
+  show (DottedList head tail) = "(" ++ unwordsList head ++ " . " ++ show tail ++ ")"
+  show (Port _) = "<IO port>"
+  show (IOFunc _) = "<IO primitive>"
+  show (PrimitiveFunc _) = "<primitive>"
+  show (Func {params = args, vararg = varargs, body = body, closure = env}) =
+    "(lambda (" ++ unwords (map show args) ++
+       (case varargs of
+          Nothing -> ""
+          Just arg -> " . " ++ arg) ++ ") ...)"
 
-instance Show LispVal where show = showVal
+sexprToLispVal :: SExpr -> LispVal
+sexprToLispVal = \case
+  SAtom s           -> Atom s
+  SList xs          -> List $ map sexprToLispVal xs
+  SDottedList xs x  -> DottedList (map sexprToLispVal xs) (sexprToLispVal x)
+  SNumber n         -> Number n
+  SChar c           -> Char c
+  SString s         -> String s
+  SVector v         -> Vector (fmap sexprToLispVal v)
+  SBool b           -> Bool b
+
+lispValToSExpr :: LispVal -> SExpr
+lispValToSExpr = \case
+  Atom s           -> SAtom s
+  List xs          -> SList $ map lispValToSExpr xs
+  DottedList xs x  -> SDottedList (map lispValToSExpr xs) (lispValToSExpr x)
+  Number n         -> SNumber n
+  Char c           -> SChar c
+  String s         -> SString s
+  Vector v         -> SVector (fmap lispValToSExpr v)
+  Bool b           -> SBool b
 
 data LispError = NumArgs Integer [LispVal]
                | TypeMismatch String LispVal
                | Parser ParseError
-               | BadSpecialForm String LispVal
+               | BadSpecialForm String SExpr
                | NotFunction String String
                | UnboundVar String String
                | OutOfRange (Int, Int) Int
@@ -105,6 +151,6 @@ showError (OutOfRange range index) = "Value out of range " ++ show range ++ ": "
 
 instance Show LispError where show = showError
 
-unwordsList :: [LispVal] -> String
-unwordsList = unwords . map showVal
+unwordsList :: Show a => [a] -> String
+unwordsList = unwords . map show
 

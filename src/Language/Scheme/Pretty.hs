@@ -15,20 +15,20 @@ class Pretty a where
 instance Pretty a => Pretty [a] where
   pretty as = vcat $ fmap pretty as
 
-instance Pretty LispVal where
-  pretty val@(Atom _) = text $ show val
-  pretty val@(Bool _) = text $ show val
-  pretty val@(Char _) = text $ show val
-  pretty val@(Number _) = text $ show val
-  pretty val@(String _) = text $ show val
-  pretty form@(DottedList xs x) = text $ show form
-  pretty form@(Vector arr) = text $ show form
-  pretty (List [atom@(Atom x)]) = char '(' <> pretty atom <> char ')'
-  pretty (List [atom@(Atom "quote"), x]) = text "'" <> pretty x
-  pretty (List []) = text "()"
-  pretty (List (x:xs)) =
+instance Pretty SExpr where
+  pretty val@(SAtom _) = text $ show val
+  pretty val@(SBool _) = text $ show val
+  pretty val@(SChar _) = text $ show val
+  pretty val@(SNumber _) = text $ show val
+  pretty val@(SString _) = text $ show val
+  pretty form@(SDottedList xs x) = text $ show form
+  pretty form@(SVector arr) = text $ show form
+  pretty (SList [atom@(SAtom x)]) = char '(' <> pretty atom <> char ')'
+  pretty (SList [atom@(SAtom "quote"), x]) = text "'" <> pretty x
+  pretty (SList []) = text "()"
+  pretty (SList (x:xs)) =
     char '(' <> pretty x <+> nest (length (show x)) (prettyList xs <> char ')')
   pretty _ = empty
 
-prettyList :: [LispVal] -> Doc
+prettyList :: [SExpr] -> Doc
 prettyList xs = sep $ map pretty xs

@@ -5,6 +5,7 @@ module Language.Scheme
   , LispVal(..)
   , newEnv
   , runOne
+  , SExpr(..)
   , withStandardLibrary
   ) where
 

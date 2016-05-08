@@ -382,7 +382,7 @@ closePort = \case
 readProc :: [LispVal] -> EvalM LispVal
 readProc = \case
   []          -> readProc [Port stdin]
-  [Port port] -> (liftIO $ hGetLine stdin) >>= liftThrows . readExpr
+  [Port port] -> (liftIO $ hGetLine stdin) >>= liftThrows . (fmap sexprToLispVal) . readExpr
   [badArg]    -> throwError $ TypeMismatch "port" badArg
   badArgList  -> throwError $ NumArgs 1 badArgList
 

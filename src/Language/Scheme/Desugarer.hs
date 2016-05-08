@@ -6,17 +6,17 @@ import Control.Monad.Except
 
 import Language.Scheme.Types
 
-desugar :: LispVal -> ThrowsError LispVal
-desugar expr@(List (Atom "let": _)) = desugarLet expr
+desugar :: SExpr -> ThrowsError SExpr
+desugar expr@(SList (SAtom "let": _)) = desugarLet expr
 desugar expr = pure expr
 
-desugarLet :: LispVal -> ThrowsError LispVal
-desugarLet form@(List (Atom "let" : (List bindings) : body)) = do
+desugarLet :: SExpr -> ThrowsError SExpr
+desugarLet form@(SList (SAtom "let" : (SList bindings) : body)) = do
   (params, args) <- unzip <$> traverse extract bindings
-  let lambda = List (Atom "lambda" : (List params) : body)
-  pure $ List (lambda : args)
+  let lambda = SList (SAtom "lambda" : (SList params) : body)
+  pure $ SList (lambda : args)
   where
-    extract :: LispVal -> ThrowsError (LispVal, LispVal)
-    extract (List [id@(Atom _), valExpr]) = pure (id, valExpr)
+    extract :: SExpr -> ThrowsError (SExpr, SExpr)
+    extract (SList [id@(SAtom _), valExpr]) = pure (id, valExpr)
     extract _ = throwError $ BadSpecialForm "Malformed let" form
 desugarLet badForm = throwError $ BadSpecialForm "Malformed let" badForm

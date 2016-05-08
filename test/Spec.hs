@@ -226,11 +226,11 @@ evalSpec = do
       \s -> monadicIO $ do
         pre $ not $ null s
         env  <- run $ newEnv
-        let p1 = List [Atom "symbol->string", List [Atom "quote", Atom s]]
-        (Right res1) <- run $ evalLispVal env p1
-        let p2 = List [Atom "string->symbol", res1]
-        (Right res2) <- run $ evalLispVal env p2
-        assert $ res2 == Atom s
+        let p1 = SList [SAtom "symbol->string", SList [SAtom "quote", SAtom s]]
+        (Right (String res1)) <- run $ evalLispVal env p1
+        let p2 = SList [SAtom "string->symbol", SString res1]
+        (Right (Atom res2)) <- run $ evalLispVal env p2
+        assert $ res2 == s
 
   describe "char->integer/integer->char" $ do
     it "converts one type to the other" $ do
@@ -241,11 +241,11 @@ evalSpec = do
     it "are the inverse of each other" $ property $
       \c -> monadicIO $ do
         env  <- run $ newEnv
-        let p1 = List [Atom "char->integer", Char c]
-        (Right res1) <- run $ evalLispVal env p1
-        let p2 = List [Atom "integer->char", res1]
-        (Right res2) <- run $ evalLispVal env p2
-        assert $ res2 == Char c
+        let p1 = SList [SAtom "char->integer", SChar c]
+        (Right (Number res1)) <- run $ evalLispVal env p1
+        let p2 = SList [SAtom "integer->char", SNumber res1]
+        (Right (Char res2)) <- run $ evalLispVal env p2
+        assert $ res2 == c
 
 desugarSpec :: Spec
 desugarSpec =
