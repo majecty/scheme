@@ -13,9 +13,9 @@ import Language.Scheme.Parser
 evalStringOne env = (fmap . fmap) last . (evalString env)
 
 evalSpec :: Spec
-evalSpec =
-  describe "evalStringOne" $ do
-    it "evaluates a char" $ do
+evalSpec = do
+  describe "char" $ do
+    it "evaluates to itself" $ do
       env <- newEnv
       evalStringOne env "#\\space" `shouldReturn` (Right $ Char ' ')
       evalStringOne env "#\\newline" `shouldReturn` (Right $ Char '\n')
@@ -24,10 +24,12 @@ evalSpec =
       evalStringOne env "#\\(" `shouldReturn` (Right $ Char '(')
       evalStringOne env "#\\1" `shouldReturn` (Right $ Char '1')
 
-    it "evaluates a string" $ do
+  describe "string" $ do
+    it "evaluates to itself" $ do
       env <- newEnv
       evalStringOne env "\"foo\"" `shouldReturn` (Right $ String "foo")
 
+  describe "number" $ do
     it "evaluates a positive number" $ do
       env <- newEnv
       evalStringOne env "123" `shouldReturn` (Right $ Number 123)
@@ -36,33 +38,39 @@ evalSpec =
       env <- newEnv
       evalStringOne env "-123" `shouldReturn` (Right . Number . negate $ 123)
 
-    it "evaluates an atom" $ do
+  describe "atom" $ do
+    it "evaluates to itself" $ do
       env <- newEnv
       evalStringOne env "'foo" `shouldReturn` (Right $ Atom "foo")
 
-    it "evaluates a bool value" $ do
+  describe "bool" $ do
+    it "evaluates to itself" $ do
       env <- newEnv
       evalStringOne env "#t"  `shouldReturn` (Right $ Bool True)
       evalStringOne env "#f"  `shouldReturn` (Right $ Bool False)
       evalStringOne env "'#f" `shouldReturn` (Right $ Bool False)
 
-    it "evaluates a vector" $ do
+  describe "vector" $ do
+    it "evaluates to a vector" $ do
       env <- newEnv
       evalStringOne env "#()"  `shouldReturn` (Right $ Vector $ IArray.listArray (0, -1) [])
       evalStringOne env "#(1 'foo \"bar\")"  `shouldReturn`
         (Right $ Vector $ IArray.listArray (0, 2) [Number 1, List [Atom "quote", Atom "foo"], String "bar"])
 
+  describe "begin" $ do
     it "evaluates begin expressions sequentially from left to right" $ do
       env <- newEnv
       evalStringOne env "(begin (define x 0) (set! x 5) (+ x 1))"
         `shouldReturn` (Right $ Number 6)
 
+  describe "define" $ do
     it "defines a variable" $ do
       env <- newEnv
       evalStringOne env "(define x 28)" `shouldReturn` (Right $ Number 28)
       evalStringOne env "x" `shouldReturn` (Right $ Number 28)
 
-    it "provides type predicates" $ do
+  describe "type predicates" $ do
+    it "return #t if the object is of the named type" $ do
       env <- newEnv
       evalStringOne env "(boolean? #f)" `shouldReturn` (Right $ Bool True)
       evalStringOne env "(boolean? 0)" `shouldReturn` (Right $ Bool False)
@@ -112,7 +120,8 @@ evalSpec =
       evalStringOne env "(procedure? (lambda (x) (* x x)))" `shouldReturn` (Right $ Bool True)
       evalStringOne env "(procedure? '(lambda (x) (* x x)))" `shouldReturn` (Right $ Bool False)
 
-    it "implements char comparison procedures" $ do
+  describe "char comparison procedures" $ do
+    it "impose a total oredering on the set of characters" $ do
       env <- newEnv
       evalStringOne env "(char=? #\\a #\\a)" `shouldReturn` (Right $ Bool True)
       evalStringOne env "(char=? #\\A #\\A)" `shouldReturn` (Right $ Bool True)
@@ -138,63 +147,8 @@ evalSpec =
       evalStringOne env "(char>=? #\\A #\\B)" `shouldReturn` (Right $ Bool False)
       evalStringOne env "(char>=? #\\1 #\\2)" `shouldReturn` (Right $ Bool False)
 
-    it "implements string comparison procedures" $ do
-      env <- newEnv
-      evalStringOne env "(string=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
-      evalStringOne env "(string<? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool True)
-      evalStringOne env "(string>? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool False)
-      evalStringOne env "(string<? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool True)
-      evalStringOne env "(string>? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool False)
-      evalStringOne env "(string<=? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool True)
-      evalStringOne env "(string>=? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool False)
-      evalStringOne env "(string<=? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool True)
-      evalStringOne env "(string>=? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool False)
-      evalStringOne env "(string<=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
-      evalStringOne env "(string>=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
-
-    it "implements string-length procedures" $ do
-      env <- newEnv
-      evalStringOne env "(string-length \"\")" `shouldReturn` (Right $ Number 0)
-      evalStringOne env "(string-length \"foo\")" `shouldReturn` (Right $ Number 3)
-      evalStringOne env "(string-length 'foo)" `shouldReturn` (Left $ TypeMismatch "string" (Atom "foo"))
-
-    it "implements list<->vector conversion procedures" $ do
-      env <- newEnv
-      evalStringOne env "(list->vector '(1 2 3))" `shouldReturn`
-        (Right $ Vector $ IArray.listArray (0, 2) [Number 1, Number 2, Number 3])
-      evalStringOne env "(vector->list #(1 2 3))" `shouldReturn`
-        (Right $ List [Number 1, Number 2, Number 3])
-
-    it "implements symbol<->string conversion procedures" $ do
-      env <- newEnv
-      evalStringOne env "(symbol->string 'foo)" `shouldReturn` (Right $ String "foo")
-      evalStringOne env "(string->symbol \"foo\")" `shouldReturn` (Right $ Atom "foo")
-
-    it "implements symbol->string as an inverse of string->symbol" $ property $
-      \s -> monadicIO $ do
-        pre $ not $ null s
-        env  <- run $ newEnv
-        let p1 = List [Atom "symbol->string", List [Atom "quote", Atom s]]
-        (Right res1) <- run $ evalLispVal env p1
-        let p2 = List [Atom "string->symbol", res1]
-        (Right res2) <- run $ evalLispVal env p2
-        assert $ res2 == Atom s
-
-    it "implements char<->integer conversion procedures" $ do
-      env <- newEnv
-      evalStringOne env "(char->integer #\\a)" `shouldReturn` (Right $ Number 97)
-      evalStringOne env "(integer->char 97)" `shouldReturn` (Right $ Char 'a')
-
-    it "implements char->integer as an inverse of integer->char" $ property $
-      \c -> monadicIO $ do
-        env  <- run $ newEnv
-        let p1 = List [Atom "char->integer", Char c]
-        (Right res1) <- run $ evalLispVal env p1
-        let p2 = List [Atom "integer->char", res1]
-        (Right res2) <- run $ evalLispVal env p2
-        assert $ res2 == Char c
-
-    it "implements char predicate procedures" $ do
+  describe "char predicates" $ do
+    it "return #t if their arguments are of the named characters" $ do
       env <- newEnv
       evalStringOne env "(char-alphabetic? #\\a)" `shouldReturn` (Right $ Bool True)
       evalStringOne env "(char-alphabetic? #\\A)" `shouldReturn` (Right $ Bool True)
@@ -217,7 +171,8 @@ evalSpec =
       evalStringOne env "(char-lower-case? #\\A)" `shouldReturn` (Right $ Bool False)
       evalStringOne env "(char-lower-case? #\\1)" `shouldReturn` (Right $ Bool False)
 
-    it "implements char-upcase/char-downcase procedures" $ do
+  describe "char-upcase/char-downcase" $ do
+    it "return a character char2 such that (char-ci=? char char2)" $ do
       env <- newEnv
       evalStringOne env "(char-upcase #\\a)" `shouldReturn` (Right $ Char 'A')
       evalStringOne env "(char-upcase #\\A)" `shouldReturn` (Right $ Char 'A')
@@ -225,6 +180,67 @@ evalSpec =
       evalStringOne env "(char-downcase #\\A)" `shouldReturn` (Right $ Char 'a')
       evalStringOne env "(char-downcase #\\a)" `shouldReturn` (Right $ Char 'a')
       evalStringOne env "(char-downcase #\\1)" `shouldReturn` (Right $ Char '1')
+
+  describe "string comparison procedures" $ do
+    it "impose a total oredering on the set of strings" $ do
+      env <- newEnv
+      evalStringOne env "(string=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string<? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string<? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string<=? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>=? \"bar\" \"foo\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string<=? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>=? \"foo\" \"foz\")" `shouldReturn` (Right $ Bool False)
+      evalStringOne env "(string<=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
+      evalStringOne env "(string>=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
+
+  describe "string-length" $ do
+    it "returns the number of characters in the given string" $ do
+      env <- newEnv
+      evalStringOne env "(string-length \"\")" `shouldReturn` (Right $ Number 0)
+      evalStringOne env "(string-length \"foo\")" `shouldReturn` (Right $ Number 3)
+      evalStringOne env "(string-length 'foo)" `shouldReturn` (Left $ TypeMismatch "string" (Atom "foo"))
+
+  describe "list->vector/vector->list" $ do
+    it "are the inverse of each other" $ do
+      env <- newEnv
+      evalStringOne env "(list->vector '(1 2 3))" `shouldReturn`
+        (Right $ Vector $ IArray.listArray (0, 2) [Number 1, Number 2, Number 3])
+      evalStringOne env "(vector->list #(1 2 3))" `shouldReturn`
+        (Right $ List [Number 1, Number 2, Number 3])
+
+  describe "symbol->string/string->symbol" $ do
+    it "converts one type to the other" $ do
+      env <- newEnv
+      evalStringOne env "(symbol->string 'foo)" `shouldReturn` (Right $ String "foo")
+      evalStringOne env "(string->symbol \"foo\")" `shouldReturn` (Right $ Atom "foo")
+
+    it "are the inverse of each other" $ property $
+      \s -> monadicIO $ do
+        pre $ not $ null s
+        env  <- run $ newEnv
+        let p1 = List [Atom "symbol->string", List [Atom "quote", Atom s]]
+        (Right res1) <- run $ evalLispVal env p1
+        let p2 = List [Atom "string->symbol", res1]
+        (Right res2) <- run $ evalLispVal env p2
+        assert $ res2 == Atom s
+
+  describe "char->integer/integer->char" $ do
+    it "converts one type to the other" $ do
+      env <- newEnv
+      evalStringOne env "(char->integer #\\a)" `shouldReturn` (Right $ Number 97)
+      evalStringOne env "(integer->char 97)" `shouldReturn` (Right $ Char 'a')
+
+    it "are the inverse of each other" $ property $
+      \c -> monadicIO $ do
+        env  <- run $ newEnv
+        let p1 = List [Atom "char->integer", Char c]
+        (Right res1) <- run $ evalLispVal env p1
+        let p2 = List [Atom "integer->char", res1]
+        (Right res2) <- run $ evalLispVal env p2
+        assert $ res2 == Char c
 
 desugarSpec :: Spec
 desugarSpec =
