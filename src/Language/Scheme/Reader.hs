@@ -98,11 +98,12 @@ schemeDottedListOrList :: Parser LispVal
 schemeDottedListOrList = parens (try schemeDottedList <|> schemeList)
 
 schemeExpr :: Parser LispVal
-schemeExpr = try schemeNumber
-           <|> schemeChar
-           <|> try schemeVector
-           <|> schemeAtom
-           <|> schemeString
-           <|> schemeQuoted
-           <|> schemeDottedListOrList
+schemeExpr = choice [ try schemeNumber
+                    , schemeChar
+                    , try schemeVector
+                    , schemeAtom
+                    , schemeString
+                    , schemeQuoted
+                    , schemeDottedListOrList
+                    ]
 
