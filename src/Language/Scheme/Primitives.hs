@@ -366,6 +366,7 @@ ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("read", readProc),
                 ("write", writeProc),
                 ("read-contents", readContents),
+                ("newline", newline),
                 ("display", display)]
 
 makePort :: IOMode -> [LispVal] -> EvalM LispVal
@@ -389,6 +390,13 @@ writeProc = \case
 readContents :: [LispVal] -> EvalM LispVal
 readContents = \case
   [String filename] -> fmap String $ liftIO $ readFile filename
+
+newline :: [LispVal] -> EvalM LispVal
+newline = \case
+  []          -> newline [Port stdout]
+  [Port port] -> liftIO $ hPutStr port "\n" >> pure Unspecified
+  [badArg]    -> throwError $ TypeMismatch "port" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
 
 display :: [LispVal] -> EvalM LispVal
 display = \case
