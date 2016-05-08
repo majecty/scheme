@@ -36,16 +36,16 @@ readOrThrow parser input = case parse parser "lisp" input of
     Right val -> pure val
 
 readExpr :: String -> ThrowsError LispVal
-readExpr = readOrThrow $ sc >> parseExpr
+readExpr = readOrThrow $ sc >> schemeExpr
 
 readExprList :: String -> ThrowsError [LispVal]
-readExprList = readOrThrow $ sc >> endBy parseExpr sc
+readExprList = readOrThrow $ sc >> endBy schemeExpr sc
 
-lispSymbolChar :: Parser Char
-lispSymbolChar = oneOf "!$%&|*+-/:<=>?@^_~#"
+schemeSymbolChar :: Parser Char
+schemeSymbolChar = oneOf "!$%&|*+-/:<=>?@^_~#"
 
-parseChar :: Parser LispVal
-parseChar = do
+schemeChar :: Parser LispVal
+schemeChar = do
   _  <- try (string "#\\")
   c  <- anyChar
   cs <- many (letterChar <|> digitChar)
@@ -56,53 +56,53 @@ parseChar = do
     [ch] -> pure $ Char ch
     _ -> fail $ "Unknown character name " ++ chracterName
 
-parseVector :: Parser LispVal
-parseVector = do
+schemeVector :: Parser LispVal
+schemeVector = do
   _  <- char '#'
-  exprs  <- parens $ endBy parseExpr sc
+  exprs  <- parens $ endBy schemeExpr sc
   pure $ Vector $ IArray.listArray (0, length exprs - 1) exprs
 
-parseString :: Parser LispVal
-parseString = String <$> quotes (many (noneOf "\""))
+schemeString :: Parser LispVal
+schemeString = String <$> quotes (many (noneOf "\""))
 
-parseAtom :: Parser LispVal
-parseAtom = do first <- letterChar <|> lispSymbolChar
-               rest <- many (letterChar <|> digitChar <|> lispSymbolChar)
-               let atom = first : rest
-               pure $ case atom of
-                          "#t" -> Bool True
-                          "#f" -> Bool False
-                          otherwise -> Atom atom
+schemeAtom :: Parser LispVal
+schemeAtom = do first <- letterChar <|> schemeSymbolChar
+                rest <- many (letterChar <|> digitChar <|> schemeSymbolChar)
+                let atom = first : rest
+                pure $ case atom of
+                  "#t" -> Bool True
+                  "#f" -> Bool False
+                  otherwise -> Atom atom
 
 -- FIXME: Recognize floating point numbers
-parseNumber :: Parser LispVal
-parseNumber = do sign <- optional $ oneOf "+-"
-                 digits <- some digitChar
-                 pure $ case sign of
-                            Just '-' -> Number . negate . read $ digits
-                            otherwise -> Number . read $ digits
+schemeNumber :: Parser LispVal
+schemeNumber = do sign <- optional $ oneOf "+-"
+                  digits <- some digitChar
+                  pure $ case sign of
+                           Just '-' -> Number . negate . read $ digits
+                           otherwise -> Number . read $ digits
 
-parseList :: Parser LispVal
-parseList = List <$> endBy parseExpr sc
+schemeList :: Parser LispVal
+schemeList = List <$> endBy schemeExpr sc
 
-parseDottedList :: Parser LispVal
-parseDottedList = DottedList <$> endBy parseExpr sc <* symbol "." <*> parseExpr
+schemeDottedList :: Parser LispVal
+schemeDottedList = DottedList <$> endBy schemeExpr sc <* symbol "." <*> schemeExpr
 
-parseQuoted :: Parser LispVal
-parseQuoted = do
+schemeQuoted :: Parser LispVal
+schemeQuoted = do
     symbol "'"
-    x <- parseExpr
+    x <- schemeExpr
     pure $ List [Atom "quote", x]
 
-parseDottedListOrList :: Parser LispVal
-parseDottedListOrList = parens (try parseDottedList <|> parseList)
+schemeDottedListOrList :: Parser LispVal
+schemeDottedListOrList = parens (try schemeDottedList <|> schemeList)
 
-parseExpr :: Parser LispVal
-parseExpr = try parseNumber
-        <|> parseChar
-        <|> try parseVector
-        <|> parseAtom
-        <|> parseString
-        <|> parseQuoted
-        <|> parseDottedListOrList
+schemeExpr :: Parser LispVal
+schemeExpr = try schemeNumber
+           <|> schemeChar
+           <|> try schemeVector
+           <|> schemeAtom
+           <|> schemeString
+           <|> schemeQuoted
+           <|> schemeDottedListOrList
 
