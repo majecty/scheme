@@ -11,9 +11,9 @@ desugar expr@(SList (SAtom "let": _)) = desugarLet expr
 desugar expr = pure expr
 
 desugarLet :: SExpr -> ThrowsError SExpr
-desugarLet form@(SList (SAtom "let" : (SList bindings) : body)) = do
+desugarLet form@(SList (SAtom "let" : SList bindings : body)) = do
   (params, args) <- unzip <$> traverse extract bindings
-  let lambda = SList (SAtom "lambda" : (SList params) : body)
+  let lambda = SList (SAtom "lambda" : SList params : body)
   pure $ SList (lambda : args)
   where
     extract :: SExpr -> ThrowsError (SExpr, SExpr)

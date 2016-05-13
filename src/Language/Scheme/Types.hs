@@ -27,7 +27,7 @@ type ThrowsError = Either LispError
 -- FIXME:: Use Data.StRef instead of Data.IORef.
 type Env = IORef [(String, IORef LispVal)]
 newtype EvalM a = EvalM {
-        run :: (ReaderT Env (ExceptT LispError IO) a)
+        run :: ReaderT Env (ExceptT LispError IO) a
     } deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadError LispError)
 
 liftThrows :: ThrowsError a -> EvalM a
@@ -48,7 +48,7 @@ instance Show SExpr where
   show (SChar c) = case c of
                        ' '       -> "#\\space"
                        '\n'      -> "#\\newline"
-                       otherwise -> show c
+                       _         -> show c
   show (SString contents) = "\"" ++ contents ++ "\""
   show (SVector elements) = "#(" ++ unwordsList (IArray.elems elements) ++ ")"
   show (SAtom name) = name
@@ -70,7 +70,7 @@ data LispVal = Unspecified
              | Port Handle
              | PrimitiveFunc ([LispVal] -> ThrowsError LispVal)
              | IOFunc ([LispVal] -> EvalM LispVal)
-             | Func {params :: [String], vararg :: (Maybe String),
+             | Func {params :: [String], vararg :: Maybe String,
                       body :: [SExpr], closure :: Env}
 
 instance Eq LispVal where
@@ -89,7 +89,7 @@ instance Show LispVal where
   show (Char c) = case c of
                        ' '       -> "#\\space"
                        '\n'      -> "#\\newline"
-                       otherwise -> show c
+                       _         -> show c
   show (String contents) = "\"" ++ contents ++ "\""
   show (Vector elements) = "#(" ++ unwordsList (IArray.elems elements) ++ ")"
   show (Atom name) = name
@@ -101,7 +101,7 @@ instance Show LispVal where
   show (Port _) = "<IO port>"
   show (IOFunc _) = "<IO primitive>"
   show (PrimitiveFunc _) = "<primitive>"
-  show (Func {params = args, vararg = varargs, body = body, closure = env}) =
+  show Func {params = args, vararg = varargs, body = body, closure = env} =
     "(lambda (" ++ unwords (map show args) ++
        (case varargs of
           Nothing -> ""

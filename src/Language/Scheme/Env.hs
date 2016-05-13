@@ -8,6 +8,7 @@ module Language.Scheme.Env
 
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Maybe
 import Data.IORef
 
 import Language.Scheme.Types
@@ -16,7 +17,7 @@ nullEnv :: IO Env
 nullEnv = newIORef []
 
 isBound :: Env -> String -> IO Bool
-isBound envRef var = readIORef envRef >>= pure . maybe False (const True) . lookup var
+isBound envRef var = readIORef envRef >>= pure . isJust . lookup var
 
 getVar :: String -> EvalM LispVal
 getVar var  =  do
@@ -31,7 +32,7 @@ setVar var value = do
     envRef <- ask
     env <- liftIO $ readIORef envRef
     maybe (throwError $ UnboundVar "Setting an unbound variable" var)
-        (liftIO . (flip writeIORef value))
+        (liftIO . (`writeIORef` value))
         (lookup var env)
     pure value
 

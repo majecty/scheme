@@ -25,14 +25,14 @@ numericBinop op params = traverse unpackNum params >>= pure . Number . foldl1 op
 boolBinopCI :: CI.FoldCase a => (LispVal -> ThrowsError a) -> (a -> a -> Bool) -> [LispVal] -> ThrowsError LispVal
 boolBinopCI unpacker op args = if length args /= 2
                                  then throwError $ NumArgs 2 args
-                                 else do left <- unpacker $ args !! 0
+                                 else do left <- unpacker $ head args
                                          right <- unpacker $ args !! 1
-                                         pure $ Bool $ (CI.foldCase left) `op` (CI.foldCase right)
+                                         pure $ Bool $ CI.foldCase left `op` CI.foldCase right
 
 boolBinop :: (LispVal -> ThrowsError a) -> (a -> a -> Bool) -> [LispVal] -> ThrowsError LispVal
 boolBinop unpacker op args = if length args /= 2
                              then throwError $ NumArgs 2 args
-                             else do left <- unpacker $ args !! 0
+                             else do left <- unpacker $ head args
                                      right <- unpacker $ args !! 1
                                      pure $ Bool $ left `op` right
 
@@ -60,7 +60,7 @@ unpackNum = \case
   (String n) -> let parsed = reads n in
                           if null parsed
                             then throwError $ TypeMismatch "number" $ String n
-                            else pure $ fst $ parsed !! 0
+                            else pure $ fst $ head parsed
   (List [n]) -> unpackNum n
   notNum     -> throwError $ TypeMismatch "number" notNum
 
@@ -86,7 +86,7 @@ unpackEquals arg1 arg2 (AnyUnpacker unpacker) =
              do unpacked1 <- unpacker arg1
                 unpacked2 <- unpacker arg2
                 pure $ unpacked1 == unpacked2
-        `catchError` (const $ pure False)
+                `catchError` const (pure False)
 
 car :: [LispVal] -> ThrowsError LispVal
 car = \case
@@ -114,10 +114,10 @@ cons = \case
 equal :: [LispVal] -> ThrowsError LispVal
 equal = \case
   [arg1, arg2] -> do
-    primitiveEquals <- fmap or $ traverse (unpackEquals arg1 arg2)
+    primitiveEquals <- or <$> traverse (unpackEquals arg1 arg2)
                       [AnyUnpacker unpackNum, AnyUnpacker unpackStr, AnyUnpacker unpackBool]
     eqvEquals <- eqv [arg1, arg2]
-    pure $ Bool $ (primitiveEquals || let (Bool x) = eqvEquals in x)
+    pure $ Bool (primitiveEquals || let (Bool x) = eqvEquals in x)
   badArgList -> throwError $ NumArgs 2 badArgList
 
 eqv :: [LispVal] -> ThrowsError LispVal
@@ -127,7 +127,7 @@ eqv = \case
 
 isBoolean :: [LispVal] -> ThrowsError LispVal
 isBoolean = \case
-  [(Bool _)]  -> pure . Bool $ True
+  [Bool _]    -> pure . Bool $ True
   [_]         -> pure . Bool $ False
   badArgList  -> throwError $ NumArgs 1 badArgList
 
@@ -140,7 +140,7 @@ isPair = \case
 
 isList :: [LispVal] -> ThrowsError LispVal
 isList = \case
-  [(List _)]  -> pure . Bool $ True
+  [List _]    -> pure . Bool $ True
   [_]         -> pure . Bool $ False
   badArgList  -> throwError $ NumArgs 1 badArgList
 
@@ -185,9 +185,9 @@ substring = \case
   [String s, Number start, Number end] -> do
     let start' = fromIntegral start
     let end' = fromIntegral end
-    when (not $ inRange s start') $ throwError $ OutOfRange (0, length s) start'
-    when (not $ inRange s end')   $ throwError $ OutOfRange (0, length s) start'
-    when (start' > end')        $ throwError $ OutOfRange (start', length s) end'
+    unless (inRange s start') $ throwError $ OutOfRange (0, length s) start'
+    unless (inRange s end')   $ throwError $ OutOfRange (0, length s) start'
+    when (start' > end')      $ throwError $ OutOfRange (start', length s) end'
     pure . String $ substring' start' end' s
   [badArg, Number _, Number _] -> throwError $ TypeMismatch "string" badArg
   [_, badArg, Number _] -> throwError $ TypeMismatch "number" badArg
@@ -225,7 +225,7 @@ isProcedure :: [LispVal] -> ThrowsError LispVal
 isProcedure = \case
   [PrimitiveFunc _] -> pure . Bool $ True
   [IOFunc _]        -> pure . Bool $ True
-  [Func _ _ _ _]    -> pure . Bool $ True
+  [Func {}]         -> pure . Bool $ True
   [_]               -> pure . Bool $ False
   badArgList        -> throwError $ NumArgs 1 badArgList
 
@@ -376,20 +376,20 @@ makePort _ badArgList  = throwError $ NumArgs 1 badArgList
 
 closePort :: [LispVal] -> EvalM LispVal
 closePort = \case
-  [Port port] -> liftIO $ hClose port >> (pure $ Bool True)
+  [Port port] -> liftIO $ hClose port >> pure (Bool True)
   _           -> pure $ Bool False
 
 readProc :: [LispVal] -> EvalM LispVal
 readProc = \case
   []          -> readProc [Port stdin]
-  [Port port] -> (liftIO $ hGetLine stdin) >>= liftThrows . (fmap sexprToLispVal) . readExpr
+  [Port port] -> liftIO (hGetLine port) >>= liftThrows . fmap sexprToLispVal . readExpr
   [badArg]    -> throwError $ TypeMismatch "port" badArg
   badArgList  -> throwError $ NumArgs 1 badArgList
 
 writeProc :: [LispVal] -> EvalM LispVal
 writeProc = \case
   [obj]             -> writeProc [obj, Port stdout]
-  [obj, Port port]  -> liftIO $ hPrint port obj >> (pure $ Bool True)
+  [obj, Port port]  -> liftIO $ hPrint port obj >> pure (Bool True)
   [_, badArg]       -> throwError $ TypeMismatch "port" badArg
   badArgList        -> throwError $ NumArgs 1 badArgList -- FIXME: NumArgs 1 or 2
 

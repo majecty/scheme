@@ -10,6 +10,7 @@ module Language.Scheme.Evaluator
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Maybe
 import System.IO
 
 import Paths_scheme
@@ -32,13 +33,13 @@ eval (SList [SAtom "quote", val]) = pure $ sexprToLispVal val
 eval (SList [SAtom "if", pred, conseq]) = do
     result <- eval pred
     case result of
-      Bool False -> pure $ Unspecified
-      otherwise -> eval conseq
+      Bool False -> pure Unspecified
+      _          -> eval conseq
 eval form@(SList [SAtom "if", pred, conseq, alt]) = do
     result <- eval pred
     case result of
         Bool False  -> eval alt
-        otherwise   -> eval conseq
+        _           -> eval conseq
 eval badForm@(SList (SAtom "if":_)) = throwError $ BadSpecialForm "Unrecognized special form" badForm
 eval (SList [SAtom "set!", SAtom var, form]) =
     eval form >>= setVar var
@@ -69,21 +70,21 @@ apply :: LispVal -> [LispVal] -> EvalM LispVal
 apply (IOFunc func) args = func args
 apply (PrimitiveFunc func) args = liftThrows $ func args
 apply (Func params varargs body closure) args =
-    if num params /= num args && varargs == Nothing
+    if num params /= num args && isNothing varargs
        then throwError $ NumArgs (num params) args
        else do
-           env <- (liftIO $ bindVars closure $ zip params args)
+           env <- liftIO $ bindVars closure $ zip params args
            env' <- bindVarArgs varargs env
            local (const env') evalBody
     where remainingArgs = drop (length params) args
           num = toInteger . length
           evalBody = last <$> traverse eval body
           bindVarArgs arg env = case arg of
-              Just argName -> liftIO $ bindVars env [(argName, List $ remainingArgs)]
+              Just argName -> liftIO $ bindVars env [(argName, List remainingArgs)]
               Nothing -> pure env
 
 load :: String -> EvalM [SExpr]
-load filename = (liftIO $ readFile filename) >>= liftThrows . readExprList
+load filename = liftIO (readFile filename) >>= liftThrows . readExprList
 
 evalLispVal' :: Env -> SExpr -> IOThrowsError LispVal
 evalLispVal' env expr =
@@ -97,17 +98,17 @@ evalString' env str = case readExprList str of
                         Right exprs -> traverse (evalLispVal' env) exprs
 
 evalLispVal :: Env -> SExpr -> IO (Either LispError LispVal)
-evalLispVal env = runExceptT . (evalLispVal' env)
+evalLispVal env = runExceptT . evalLispVal' env
 
 evalString :: Env -> String -> IO (Either LispError [LispVal])
-evalString env = runExceptT . (evalString' env)
+evalString env = runExceptT . evalString' env
 
 runOne :: [String] -> IO ()
 runOne args = do
     env <- newEnv >>= flip bindVars [("args", List $ map String $ drop 1 args)]
     withStandardLibrary env $
-        (runExceptT $ runEvalM env $ eval (SList [SAtom "load", SString (args !! 0)]))
-        >>= hPutStrLn stderr . (either show show)
+      runExceptT (runEvalM env $ eval (SList [SAtom "load", SString (head args)]))
+        >>= hPutStrLn stderr . either show show
 
 withStandardLibrary :: (MonadIO m) => Env -> m () -> m ()
 withStandardLibrary env action = do
@@ -125,12 +126,12 @@ newEnv = primitiveBindings
     makeFunc constructor (var, func) = (var, constructor func)
 
     primitiveBindings :: IO Env
-    primitiveBindings = nullEnv >>= (flip bindVars $ map (makeFunc IOFunc) builtinPrimitives
+    primitiveBindings = nullEnv >>= flip bindVars (map (makeFunc IOFunc) builtinPrimitives
                                               ++ map (makeFunc IOFunc) ioPrimitives
                                               ++ map (makeFunc PrimitiveFunc) primitives)
 
 runEvalM :: Env -> EvalM LispVal -> IOThrowsError LispVal
-runEvalM env action = (runReaderT . run) action $ env
+runEvalM env action = (runReaderT . run) action env
 
 makeFunc :: Maybe String -> [SExpr] -> [SExpr] -> EvalM LispVal
 makeFunc varargs params body = do

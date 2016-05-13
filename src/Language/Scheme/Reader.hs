@@ -71,7 +71,7 @@ schemeAtom = do first <- letterChar <|> schemeSymbolChar
                 pure $ case atom of
                   "#t" -> SBool True
                   "#f" -> SBool False
-                  otherwise -> SAtom atom
+                  _    -> SAtom atom
 
 -- FIXME: Recognize floating point numbers
 schemeNumber :: Parser SExpr
@@ -79,7 +79,7 @@ schemeNumber = do sign <- optional $ oneOf "+-"
                   digits <- some digitChar
                   pure $ case sign of
                            Just '-' -> SNumber . negate . read $ digits
-                           otherwise -> SNumber . read $ digits
+                           _        -> SNumber . read $ digits
 
 schemeList :: Parser SExpr
 schemeList = SList <$> endBy schemeExpr sc
