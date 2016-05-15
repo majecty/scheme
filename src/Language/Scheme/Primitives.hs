@@ -283,6 +283,14 @@ charDowncase = \case
   [badArg]    -> throwError $ TypeMismatch "char" badArg
   badArgList  -> throwError $ NumArgs 1 badArgList
 
+strStrAppend :: [LispVal] -> ThrowsError LispVal
+strStrAppend = \case
+  []                          -> pure $ String ""
+  [s@(String _)]              -> pure s
+  (String s1:String s2:rest)  -> strStrAppend ((String $ s1 ++ s2):rest)
+  (String _:badArg:_)         -> throwError $ TypeMismatch "string" badArg
+  (badArg:_)                  -> throwError $ TypeMismatch "string" badArg
+
 stringLength :: [LispVal] -> ThrowsError LispVal
 stringLength = \case
   [String s]  -> pure . Number $ fromIntegral . length $ s
@@ -315,6 +323,7 @@ primitives = [("+", numericBinop (+)),
               ("string-ci>?", strBoolBinopCI (>)),
               ("string-ci<=?", strBoolBinopCI (<=)),
               ("string-ci>=?", strBoolBinopCI (>=)),
+              ("string-append", strStrAppend),
               ("string-length", stringLength),
               ("char=?", charBoolBinop (==)),
               ("char<?", charBoolBinop (<)),
