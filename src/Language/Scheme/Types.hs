@@ -72,6 +72,7 @@ data LispVal = Unspecified
              | IOFunc ([LispVal] -> EvalM LispVal)
              | Func {params :: [String], vararg :: Maybe String,
                       body :: [SExpr], closure :: Env}
+             | EOF
 
 instance Eq LispVal where
   (Bool arg1) == (Bool arg2) = arg1 == arg2
@@ -82,6 +83,7 @@ instance Eq LispVal where
   (Atom arg1) == (Atom arg2) = arg1 == arg2
   (DottedList xs x) == (DottedList ys y) = xs == ys && x == y
   (List arg1) == (List arg2) = arg1 == arg2
+  EOF == EOF = True
   _ == _ = False
 
 instance Show LispVal where
@@ -106,6 +108,7 @@ instance Show LispVal where
        (case varargs of
           Nothing -> ""
           Just arg -> " . " ++ arg) ++ ") ...)"
+  show (EOF) = "<EOF>"
 
 sexprToLispVal :: SExpr -> LispVal
 sexprToLispVal = \case
