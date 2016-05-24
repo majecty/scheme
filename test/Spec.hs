@@ -201,6 +201,35 @@ evalSpec = do
       evalStringOne env "(string<=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
       evalStringOne env "(string>=? \"foo\" \"foo\")" `shouldReturn` (Right $ Bool True)
 
+  describe "string-append" $ do
+    it "obeys right-identity" $ do
+      env <- newEnv
+      evalStringOne env "(string-append \"scheme\" \"\")" `shouldReturn` (Right $ String "scheme")
+
+    it "obeys left-identity" $ do
+      env <- newEnv
+      evalStringOne env "(string-append \"\" \"lisp\")" `shouldReturn` (Right $ String "lisp")
+
+    describe "given no arguments" $ do
+      it "returns an empty string" $ do
+        env <- newEnv
+        evalStringOne env "(string-append)" `shouldReturn` (Right $ String "")
+
+    describe "given one argument" $ do
+      it "returns that argument" $ do
+        env <- newEnv
+        evalStringOne env "(string-append \"program\")" `shouldReturn` (Right $ String "program")
+
+    describe "given two arguments" $ do
+      it "returns a string with the first arg on the left and the second on the right" $ do
+        env <- newEnv
+        evalStringOne env "(string-append \"scheme-\" \"lisp\")" `shouldReturn` (Right $ String "scheme-lisp")
+
+    describe "given more than two arguments" $ do
+      it "returns a string of equal length to the sum of the args, with the passed values in order" $ do
+        env <- newEnv
+        evalStringOne env "(string-append \"a\" \".\" \"b\" \".\" \"c\")" `shouldReturn` (Right $ String "a.b.c")
+
   describe "string-length" $ do
     it "returns the number of characters in the given string" $ do
       env <- newEnv
