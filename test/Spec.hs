@@ -276,6 +276,11 @@ evalSpec = do
         (Right (Char res2)) <- run $ evalLispVal env p2
         assert $ res2 == c
 
+  describe "string-copy" $ do
+    it "creates a newly allocated copy of the given string" $ do
+      env <- newEnv
+      evalStringOne env "(string-copy \"kashikoi kawaii~?\")" `shouldReturn` (Right $ String "kashikoi kawaii~?")
+
 desugarSpec :: Spec
 desugarSpec =
   describe "desugarer" $ do
