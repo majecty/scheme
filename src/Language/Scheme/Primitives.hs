@@ -162,6 +162,12 @@ stringToSymbol = \case
   [badArg]    -> throwError $ TypeMismatch "string" badArg
   badArgList  -> throwError $ NumArgs 1 badArgList
 
+stringCopy :: [LispVal] -> ThrowsError LispVal
+stringCopy = \case
+  [String s]          -> pure . String $ s
+  [badArg]            -> throwError $ TypeMismatch "string" badArg
+  badArgList          -> throwError $ NumArgs 1 badArgList
+
 isNumber :: [LispVal] -> ThrowsError LispVal
 isNumber = \case
   [Number _]  -> pure . Bool $ True
@@ -356,6 +362,7 @@ primitives = [("+", numericBinop (+)),
               ("symbol?", isSymbol),
               ("symbol->string", symbolToString),
               ("string->symbol", stringToSymbol),
+              ("string-copy", stringCopy),
               ("number?", isNumber),
               ("char?", isChar),
               ("string?", isString),
