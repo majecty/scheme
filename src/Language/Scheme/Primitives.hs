@@ -174,6 +174,12 @@ isChar = \case
   [_]         -> pure . Bool $ False
   badArgList  -> throwError $ NumArgs 1 badArgList
 
+isEofObject :: [LispVal] -> ThrowsError LispVal
+isEofObject = \case
+  [EOF]       -> pure . Bool $ True
+  [_]         -> pure . Bool $ False
+  badArgList  -> throwError $ NumArgs 1 badArgList
+
 isString :: [LispVal] -> ThrowsError LispVal
 isString = \case
   [String _]  -> pure . Bool $ True
@@ -358,6 +364,7 @@ primitives = [("+", numericBinop (+)),
               ("string->symbol", stringToSymbol),
               ("number?", isNumber),
               ("char?", isChar),
+              ("eof-object?", isEofObject),
               ("string?", isString),
               ("substring", substring),
               ("vector?", isVector),
