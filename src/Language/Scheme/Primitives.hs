@@ -168,6 +168,14 @@ stringCopy = \case
   [badArg]            -> throwError $ TypeMismatch "string" badArg
   badArgList          -> throwError $ NumArgs 1 badArgList
 
+makeString :: [LispVal] -> ThrowsError LispVal
+makeString = \case
+  [Number n]          -> pure . String . (flip replicate) ' ' . fromIntegral $ n
+  [Number n, Char c]  -> pure . String . (flip replicate) c . fromIntegral $ n
+  [badArg]            -> throwError $ TypeMismatch "number" badArg
+  [_, badArg]         -> throwError $ TypeMismatch "char" badArg
+  badArgList          -> throwError $ NumArgs 2 badArgList
+
 isNumber :: [LispVal] -> ThrowsError LispVal
 isNumber = \case
   [Number _]  -> pure . Bool $ True
@@ -369,6 +377,7 @@ primitives = [("+", numericBinop (+)),
               ("symbol->string", symbolToString),
               ("string->symbol", stringToSymbol),
               ("string-copy", stringCopy),
+              ("make-string", makeString),
               ("number?", isNumber),
               ("char?", isChar),
               ("eof-object?", isEofObject),

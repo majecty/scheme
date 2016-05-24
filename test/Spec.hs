@@ -281,6 +281,16 @@ evalSpec = do
       env <- newEnv
       evalStringOne env "(string-copy \"kashikoi kawaii~?\")" `shouldReturn` (Right $ String "kashikoi kawaii~?")
 
+  describe "make-string" $ do
+    it "creates a newly allocated string of length k" $ do
+      env <- newEnv
+      evalStringOne env "(make-string 5)" `shouldReturn` (Right $ String "     ")
+      evalStringOne env "(make-string 0)" `shouldReturn` (Right $ String "")
+    it "if char is given, then all elements of the string are initialized to the given char" $ do
+      env <- newEnv
+      evalStringOne env "(make-string 5 #\\a)" `shouldReturn` (Right $ String "aaaaa")
+      evalStringOne env "(make-string 0 #\\b)" `shouldReturn` (Right $ String "")
+
 desugarSpec :: Spec
 desugarSpec =
   describe "desugarer" $ do
