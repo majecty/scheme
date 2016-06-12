@@ -27,8 +27,8 @@ schemeHistoryFile = do
 replLoop :: InputT IO ()
 replLoop = do
     env <- liftIO newEnv
-    withStandardLibrary env $
-        until_ quitPred (getInputLine "Lisp>>> ") (evalAndPrint env . fromJust)
+    liftIO $ loadStandardLibrary env
+    until_ quitPred (getInputLine "Lisp>>> ") (evalAndPrint env . fromJust)
   where
     quitPred Nothing = True
     quitPred (Just "quit") = True

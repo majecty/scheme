@@ -3,10 +3,10 @@ module Language.Scheme
   , evalString
   , LispError(..)
   , LispVal(..)
+  , loadStandardLibrary
   , newEnv
   , runOne
   , SExpr(..)
-  , withStandardLibrary
   ) where
 
 import Language.Scheme.Evaluator
