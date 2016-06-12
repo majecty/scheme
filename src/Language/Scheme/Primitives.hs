@@ -397,6 +397,7 @@ ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("close-output-port", closePort),
                 ("read", readProc),
                 ("read-char", readCharProc),
+                ("peek-char", peekCharProc),
                 ("write", writeProc),
                 ("read-contents", readContents),
                 ("newline", newline),
@@ -427,6 +428,17 @@ readCharProc = \case
     case isEof of
       True -> return EOF
       False -> Char <$> (liftIO . hGetChar) port
+  [badArg]    -> throwError $ TypeMismatch "port" badArg
+  badArgList  -> throwError $ NumArgs 1 badArgList
+
+peekCharProc :: [LispVal] -> EvalM LispVal
+peekCharProc = \case
+  []          -> peekCharProc [Port stdin]
+  [Port port] -> do
+    isEof <- liftIO $ hIsEOF port
+    case isEof of
+      True -> return EOF
+      False -> Char <$> (liftIO . hLookAhead) port
   [badArg]    -> throwError $ TypeMismatch "port" badArg
   badArgList  -> throwError $ NumArgs 1 badArgList
 
