@@ -22,6 +22,7 @@ $ stack exec schemei
 
 The following people have contributed patches to Scheme, in alphabetical order:
 
+* Dongjun, LEE
 * Jeong Yong-uk
 * Jeongho Jeon
 * Jun
