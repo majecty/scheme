@@ -1,5 +1,7 @@
 module Language.Scheme
-  ( evalLispVal
+  ( defineVar
+  , Env
+  , evalLispVal
   , evalString
   , LispError(..)
   , LispVal(..)
@@ -9,6 +11,7 @@ module Language.Scheme
   , SExpr(..)
   ) where
 
+import Language.Scheme.Env
 import Language.Scheme.Evaluator
 import Language.Scheme.Reader
 import Language.Scheme.Types

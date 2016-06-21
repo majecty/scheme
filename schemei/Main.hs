@@ -1,7 +1,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Main where
 
 import Control.Monad.IO.Class
+import Control.Monad.Reader
+import Control.Monad.State
 import Data.Foldable
 import Data.Maybe
 import System.Console.Haskeline
@@ -10,6 +13,8 @@ import System.FilePath
 import System.Environment
 
 import Language.Scheme
+
+import ReplM
 
 until_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
 until_ pred prompt action = do
@@ -24,27 +29,31 @@ schemeHistoryFile = do
   createDirectoryIfMissing True dataDir
   pure $ dataDir </> "scheme_history"
 
-replLoop :: InputT IO ()
-replLoop = do
-    env <- liftIO newEnv
-    liftIO $ loadStandardLibrary env
-    until_ quitPred (getInputLine "Lisp>>> ") (evalAndPrint env . fromJust)
+replLoop :: InputT ReplM ()
+replLoop =
+  until_ quitPred (getInputLine "Lisp>>> ") (evalAndPrint . fromJust)
   where
     quitPred Nothing = True
     quitPred (Just "quit") = True
     quitPred _ = False
 
-    evalAndPrint env str = do
+    evalAndPrint str = do
+      env <- lift ask
       evalResult <- liftIO $ evalString env str
       case evalResult of
         Left  e     -> (outputStrLn . show) e
-        Right exprs -> traverse_ (outputStrLn . show) exprs
+        Right exprs -> traverse_ printAndBindResult exprs
+
+    printAndBindResult expr = do
+      name <- lift newName
+      lift $ defineVar name expr
+      outputStrLn $ name ++ " : " ++ (show expr)
 
 runRepl :: IO ()
 runRepl = do
   historyFile <- Just <$> schemeHistoryFile
   let settings = defaultSettings { historyFile }
-  runInputT settings replLoop
+  runReplM $ runInputT settings replLoop
 
 main :: IO ()
 main = do args <- getArgs

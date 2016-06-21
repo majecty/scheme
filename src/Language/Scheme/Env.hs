@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Language.Scheme.Env
   ( bindVars
   , defineVar
@@ -19,6 +20,9 @@ nullEnv = newIORef []
 isBound :: Env -> String -> IO Bool
 isBound envRef var = readIORef envRef >>= pure . isJust . lookup var
 
+lookupBoundValue :: Env -> String -> IO (Maybe (IORef LispVal))
+lookupBoundValue envRef var = readIORef envRef >>= pure . lookup var
+
 getVar :: String -> EvalM LispVal
 getVar var  =  do
     envRef <- ask
@@ -36,18 +40,18 @@ setVar var value = do
         (lookup var env)
     pure value
 
-
-defineVar :: String -> LispVal -> EvalM LispVal
+defineVar :: (MonadReader Env m, MonadIO m) => String -> LispVal -> m LispVal
 defineVar var value = do
     envRef <- ask
-    alreadyDefined <- liftIO $ isBound envRef var
-    if alreadyDefined
-       then setVar var value >> pure value
-       else liftIO $ do
-          valueRef <- newIORef value
-          env <- readIORef envRef
-          writeIORef envRef ((var, valueRef) : env)
-          pure value
+    alreadyDefinedValue <- liftIO $ lookupBoundValue envRef var
+    maybe (bindNewValue envRef) (liftIO . (`writeIORef` value)) alreadyDefinedValue
+    return value
+      where
+        bindNewValue envRef =
+           liftIO $ do
+              valueRef <- newIORef value
+              env <- readIORef envRef
+              writeIORef envRef ((var, valueRef) : env)
 
 bindVars :: Env -> [(String, LispVal)] -> IO Env
 bindVars envRef bindings = readIORef envRef >>= extendEnv bindings >>= newIORef
